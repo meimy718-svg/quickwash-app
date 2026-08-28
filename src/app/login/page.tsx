@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -19,6 +19,14 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [hasAdmin, setHasAdmin] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/bootstrap/status")
+      .then((res) => res.json())
+      .then((json) => setHasAdmin(Boolean(json.hasAdmin)))
+      .catch(() => setHasAdmin(true));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -102,6 +110,17 @@ function LoginForm() {
         >
           {loading ? "Signing in..." : "Sign in"}
         </button>
+
+        <div className="flex items-center justify-between text-sm">
+          <a href="/forgot-password" className="text-slate-500 underline">
+            Forgot password?
+          </a>
+          {!hasAdmin && (
+            <a href="/signup" className="text-blue-600 underline">
+              Set up admin account
+            </a>
+          )}
+        </div>
       </form>
     </div>
   );
