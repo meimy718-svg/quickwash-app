@@ -1,36 +1,121 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# QuickWash
 
-## Getting Started
+Mobile-first car wash booking app for mall parking locations. Customers scan a QR
+code at their parking spot, book a wash with no login required, and get a 4-digit
+OTP. Operators triage bookings in real time, workers verify the OTP and log
+before/after photos, and admins manage locations, workers and daily reports.
 
-First, run the development server:
+## Tech stack
+
+- **Frontend:** Next.js 14 (App Router) + Tailwind CSS
+- **Backend:** Supabase (Postgres, Auth, Realtime, Storage)
+- **QR codes:** [`qrcode`](https://www.npmjs.com/package/qrcode)
+- **Hosting:** Vercel (auto-deploy on push to `main`)
+
+## Roles
+
+| Role     | Route        | Access |
+|----------|--------------|--------|
+| Customer | `/book`      | Public, no login |
+| Operator | `/dashboard` | Supabase Auth, `profiles.role = 'operator'` (or `admin`) |
+| Worker   | `/worker`    | Supabase Auth, `profiles.role = 'worker'`, sees only bookings assigned to their `worker_id` |
+| Admin    | `/admin`     | Supabase Auth, `profiles.role = 'admin'` |
+
+Route access is enforced in [`src/lib/supabase/middleware.ts`](src/lib/supabase/middleware.ts),
+and again by Postgres Row Level Security policies in [`supabase/schema.sql`](supabase/schema.sql)
+— the middleware keeps people out of the wrong UI, RLS keeps them out of the wrong data
+even if they call Supabase directly.
+
+## 1. Set up the Supabase project
+
+1. Create/open your Supabase project (this one is provisioned in the Mumbai region at
+   `https://rwbpuvtsgwjzhereeeufw.supabase.co`).
+2. In the SQL editor, run [`supabase/schema.sql`](supabase/schema.sql). It creates the
+   `locations`, `workers`, `bookings` and `profiles` tables, enables Realtime on
+   `bookings`, sets up Row Level Security policies for every role, and creates the
+   public `car-photos` storage bucket.
+3. Create the first **admin** account by hand (there's no self-serve admin signup by
+   design):
+   - Supabase Dashboard → Authentication → Users → **Add user** (set an email + password,
+     mark email confirmed).
+   - In the SQL editor:
+     ```sql
+     insert into profiles (id, email, role)
+     values ('<the new user's UUID>', '<their email>', 'admin');
+     ```
+   - Sign in at `/login` — you'll land on `/admin`.
+4. From `/admin` you can then add **workers**, which automatically creates their
+   Supabase Auth login and `profiles` row (role `worker`) and shows a one-time
+   temporary password to share with them.
+5. Create at least one **operator** account the same way as the admin account (step 3),
+   using `role = 'operator'` instead.
+
+## 2. Environment variables
+
+Copy `.env.example` to `.env.local` and fill in the real values from
+**Supabase → Project Settings → API**:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Variable | Where to find it |
+|----------|-------------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → API → Project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Project Settings → API → `anon` `public` key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Project Settings → API → `service_role` key (**server-only, never expose to the browser**) |
+| `NEXTAUTH_SECRET` | Any random string — used as a general app secret |
+| `NEXTAUTH_URL` | `http://localhost:3000` locally, your production URL on Vercel |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`.env.local` is gitignored and never committed.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 3. Run locally
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Visit `http://localhost:3000`. Try the golden path:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Open `/book?location=Level2-GateA` and submit a booking → note the OTP.
+2. Sign in as an operator at `/login` → watch the booking appear on `/dashboard`
+   in real time (with an alert sound) → assign it to a worker.
+3. Sign in as that worker at `/login` → open `/worker`, enter the OTP the customer
+   received to start the job, upload before/after photos, then complete the job.
+4. Sign in as admin at `/login` → `/admin` to generate a location QR code, manage
+   workers, and export the daily CSV report.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 4. Deploy to Vercel
 
-## Deploy on Vercel
+1. In the [Vercel dashboard](https://vercel.com/new), **Import Project** and select
+   the `meimy718-svg/quickwash-app` GitHub repository.
+2. Add the same environment variables from `.env.local` (step 2) in
+   **Project Settings → Environment Variables** — use your production
+   `NEXTAUTH_URL` (your Vercel domain) instead of `localhost`.
+3. Deploy. From then on, every push to `main` triggers an automatic redeploy.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Project structure
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+src/
+  app/
+    book/            customer booking form + OTP success screen
+    login/            staff login (Supabase Auth)
+    dashboard/        operator dashboard (Realtime, key status, worker assignment)
+    worker/            worker view (OTP verify, photo upload, start/complete job)
+    admin/            QR generator, worker management, daily report + CSV export
+    api/admin/workers/  server route that provisions a worker's Supabase Auth login
+  components/          shared UI (StaffHeader, StatusPill, DailyReport)
+  lib/
+    supabase/          browser / server / admin Supabase clients + auth middleware
+    types.ts            shared TypeScript types
+    playAlert.ts        Web Audio beep for new-booking alerts
+supabase/
+  schema.sql            full DB schema, RLS policies, storage bucket setup
+```
+
+## Git workflow
+
+Each feature is committed with a tag prefix — `setup`, `db`, `feature`, `fix`, `docs` —
+and pushed to `main`, which Vercel auto-deploys.
