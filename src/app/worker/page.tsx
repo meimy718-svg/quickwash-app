@@ -12,6 +12,7 @@ export default function WorkerPage() {
   const [loading, setLoading] = useState(true);
   const [otpInputs, setOtpInputs] = useState<Record<string, string>>({});
   const [otpErrors, setOtpErrors] = useState<Record<string, string>>({});
+  const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
   const loadAssignedBookings = useCallback(async () => {
     const {
@@ -80,6 +81,35 @@ export default function WorkerPage() {
     loadAssignedBookings();
   }
 
+  async function uploadPhoto(booking: Booking, stage: "before" | "after", file: File) {
+    setUploading((prev) => ({ ...prev, [`${booking.id}-${stage}`]: true }));
+
+    const path = `${booking.id}/${stage}-${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage
+      .from("car-photos")
+      .upload(path, file, { upsert: false });
+
+    if (!uploadError) {
+      const { data: publicUrlData } = supabase.storage.from("car-photos").getPublicUrl(path);
+      const column = stage === "before" ? "photos_before" : "photos_after";
+      const existing = booking[column] ?? [];
+
+      await supabase
+        .from("bookings")
+        .update({ [column]: [...existing, publicUrlData.publicUrl] })
+        .eq("id", booking.id);
+
+      loadAssignedBookings();
+    }
+
+    setUploading((prev) => ({ ...prev, [`${booking.id}-${stage}`]: false }));
+  }
+
+  async function completeJob(booking: Booking) {
+    await supabase.from("bookings").update({ status: "done" }).eq("id", booking.id);
+    loadAssignedBookings();
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <StaffHeader title="Worker View" />
@@ -135,9 +165,73 @@ export default function WorkerPage() {
                 )}
               </div>
             )}
+
+            {booking.status === "in_progress" && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <PhotoUploadButton
+                    label="Before Photo"
+                    count={booking.photos_before?.length ?? 0}
+                    uploading={uploading[`${booking.id}-before`]}
+                    onSelect={(file) => uploadPhoto(booking, "before", file)}
+                  />
+                  <PhotoUploadButton
+                    label="After Photo"
+                    count={booking.photos_after?.length ?? 0}
+                    uploading={uploading[`${booking.id}-after`]}
+                    onSelect={(file) => uploadPhoto(booking, "after", file)}
+                  />
+                </div>
+
+                <button
+                  onClick={() => completeJob(booking)}
+                  disabled={
+                    !(booking.photos_before?.length) || !(booking.photos_after?.length)
+                  }
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg py-2.5 transition"
+                >
+                  Complete Job
+                </button>
+                {!(booking.photos_before?.length && booking.photos_after?.length) && (
+                  <p className="text-xs text-slate-400 text-center">
+                    Upload a before and after photo to complete this job.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
     </div>
+  );
+}
+
+function PhotoUploadButton({
+  label,
+  count,
+  uploading,
+  onSelect,
+}: {
+  label: string;
+  count: number;
+  uploading?: boolean;
+  onSelect: (file: File) => void;
+}) {
+  return (
+    <label className="flex flex-col items-center justify-center gap-1 border border-dashed border-slate-300 rounded-lg py-3 text-xs text-slate-500 cursor-pointer hover:border-blue-400">
+      <input
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) onSelect(file);
+          e.target.value = "";
+        }}
+      />
+      <span>{uploading ? "Uploading..." : label}</span>
+      {count > 0 && <span className="text-green-600 font-medium">{count} uploaded ✓</span>}
+    </label>
   );
 }
