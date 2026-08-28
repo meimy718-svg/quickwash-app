@@ -29,26 +29,20 @@ even if they call Supabase directly.
 ## 1. Set up the Supabase project
 
 1. Create/open your Supabase project (this one is provisioned in the Mumbai region at
-   `https://rwbpuvtsgwjzhereeeufw.supabase.co`).
+   `https://rwbpuvtsgwjzhereeufw.supabase.co`).
 2. In the SQL editor, run [`supabase/schema.sql`](supabase/schema.sql). It creates the
    `locations`, `workers`, `bookings` and `profiles` tables, enables Realtime on
    `bookings`, sets up Row Level Security policies for every role, and creates the
    public `car-photos` storage bucket.
-3. Create the first **admin** account by hand (there's no self-serve admin signup by
-   design):
-   - Supabase Dashboard → Authentication → Users → **Add user** (set an email + password,
-     mark email confirmed).
-   - In the SQL editor:
-     ```sql
-     insert into profiles (id, email, role)
-     values ('<the new user's UUID>', '<their email>', 'admin');
-     ```
-   - Sign in at `/login` — you'll land on `/admin`.
-4. From `/admin` you can then add **workers**, which automatically creates their
-   Supabase Auth login and `profiles` row (role `worker`) and shows a one-time
-   temporary password to share with them.
-5. Create at least one **operator** account the same way as the admin account (step 3),
-   using `role = 'operator'` instead.
+3. Visit `/signup` and create the first **admin** account. This route only works while
+   zero admins exist — once one is created, `/signup` redirects everyone else to
+   `/login` and refuses further admin creation. (`/login` also shows a "Set up admin
+   account" link automatically while no admin exists yet.)
+4. From `/admin` you can then add **workers** and **operators** — each creates a real
+   Supabase Auth login and `profiles` row and shows a one-time temporary password to
+   share with them. No manual SQL needed for any of this.
+5. Forgot a password? `/login` → **Forgot password?** sends a reset email (via
+   `/forgot-password` → `/reset-password`).
 
 ## 2. Environment variables
 
@@ -100,19 +94,25 @@ Visit `http://localhost:3000`. Try the golden path:
 ```
 src/
   app/
-    book/            customer booking form + OTP success screen
-    login/            staff login (Supabase Auth)
-    dashboard/        operator dashboard (Realtime, key status, worker assignment)
-    worker/            worker view (OTP verify, photo upload, start/complete job)
-    admin/            QR generator, worker management, daily report + CSV export
-    api/admin/workers/  server route that provisions a worker's Supabase Auth login
-  components/          shared UI (StaffHeader, StatusPill, DailyReport)
+    book/                customer booking form + OTP success screen
+    login/                staff login (Supabase Auth)
+    signup/              one-time first-admin bootstrap
+    forgot-password/      request a password reset email
+    reset-password/        set a new password after following the email link
+    auth/callback/          exchanges a Supabase auth code for a session
+    dashboard/            operator dashboard (Realtime, key status, worker assignment)
+    worker/                worker view (OTP verify, photo upload, start/complete job)
+    admin/                QR generator, worker + operator management, daily report + CSV
+    api/admin/workers/      provisions a worker's Supabase Auth login
+    api/admin/operators/     provisions an operator's Supabase Auth login
+    api/bootstrap/          status check + first-admin creation for /signup
+  components/              shared UI (StaffHeader, StatusPill, DailyReport)
   lib/
-    supabase/          browser / server / admin Supabase clients + auth middleware
-    types.ts            shared TypeScript types
-    playAlert.ts        Web Audio beep for new-booking alerts
+    supabase/              browser / server / admin Supabase clients + auth middleware
+    types.ts                shared TypeScript types
+    playAlert.ts            Web Audio beep for new-booking alerts
 supabase/
-  schema.sql            full DB schema, RLS policies, storage bucket setup
+  schema.sql                full DB schema, RLS policies, storage bucket setup
 ```
 
 ## Git workflow
