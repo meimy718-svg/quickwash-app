@@ -6,9 +6,9 @@ export async function POST(request: Request) {
   const { error: authError } = await requireAdmin();
   if (authError) return authError;
 
-  const { name, phone, email } = await request.json();
-  if (!name || !email) {
-    return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
+  const { email } = await request.json();
+  if (!email) {
+    return NextResponse.json({ error: "Email is required" }, { status: 400 });
   }
 
   const admin = createAdminClient();
@@ -27,29 +27,16 @@ export async function POST(request: Request) {
     );
   }
 
-  const { data: worker, error: workerError } = await admin
-    .from("workers")
-    .insert({ name, phone: phone || null, email, available: true })
-    .select()
-    .single();
-
-  if (workerError) {
-    await admin.auth.admin.deleteUser(authUser.user.id);
-    return NextResponse.json({ error: workerError.message }, { status: 400 });
-  }
-
   const { error: profileError } = await admin.from("profiles").insert({
     id: authUser.user.id,
     email,
-    role: "worker",
-    worker_id: worker.id,
+    role: "operator",
   });
 
   if (profileError) {
     await admin.auth.admin.deleteUser(authUser.user.id);
-    await admin.from("workers").delete().eq("id", worker.id);
     return NextResponse.json({ error: profileError.message }, { status: 400 });
   }
 
-  return NextResponse.json({ worker, tempPassword });
+  return NextResponse.json({ email, tempPassword });
 }
