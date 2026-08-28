@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/client";
 import StaffHeader from "@/components/StaffHeader";
+import DailyReport from "@/components/DailyReport";
 import type { Location, Worker } from "@/lib/types";
 
 export default function AdminPage() {
@@ -208,6 +209,11 @@ export default function AdminPage() {
               </div>
             ))}
           </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="font-semibold text-slate-900">Daily Report</h2>
+          <DailyReport workers={workers} />
         </section>
       </div>
     </div>
