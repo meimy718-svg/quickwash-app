@@ -12,6 +12,7 @@ export default function WorkerPage() {
   const [loading, setLoading] = useState(true);
   const [otpInputs, setOtpInputs] = useState<Record<string, string>>({});
   const [otpErrors, setOtpErrors] = useState<Record<string, string>>({});
+  const [otpVerified, setOtpVerified] = useState<Record<string, boolean>>({});
   const [uploading, setUploading] = useState<Record<string, boolean>>({});
 
   const loadAssignedBookings = useCallback(async () => {
@@ -61,23 +62,28 @@ export default function WorkerPage() {
     };
   }, [supabase, loadAssignedBookings]);
 
-  async function verifyAndStart(booking: Booking) {
+  async function verifyOtp(booking: Booking) {
     const entered = otpInputs[booking.id] ?? "";
     if (entered !== booking.otp) {
       setOtpErrors((prev) => ({ ...prev, [booking.id]: "Incorrect OTP" }));
+      setOtpVerified((prev) => ({ ...prev, [booking.id]: false }));
       return;
     }
 
     setOtpErrors((prev) => ({ ...prev, [booking.id]: "" }));
+    setOtpVerified((prev) => ({ ...prev, [booking.id]: true }));
 
-    await supabase
-      .from("bookings")
-      .update({
-        status: "in_progress",
-        key_status: booking.key_option === "Hand key to worker" ? "collected" : booking.key_status,
-      })
-      .eq("id", booking.id);
+    if (booking.key_option === "Hand key to worker") {
+      await supabase
+        .from("bookings")
+        .update({ key_status: "collected" })
+        .eq("id", booking.id);
+      loadAssignedBookings();
+    }
+  }
 
+  async function startJob(booking: Booking) {
+    await supabase.from("bookings").update({ status: "in_progress" }).eq("id", booking.id);
     loadAssignedBookings();
   }
 
@@ -139,8 +145,8 @@ export default function WorkerPage() {
             {booking.status === "pending" && (
               <div className="space-y-2">
                 <p className="text-xs text-slate-500">
-                  Ask the customer for their 4-digit OTP to confirm the handover and start
-                  the job.
+                  OTP verification is optional — ask the customer for their 4-digit OTP to
+                  confirm the handover, or just start the job.
                 </p>
                 <div className="flex gap-2">
                   <input
@@ -154,15 +160,25 @@ export default function WorkerPage() {
                     className="input flex-1 text-center tracking-widest"
                   />
                   <button
-                    onClick={() => verifyAndStart(booking)}
+                    onClick={() => verifyOtp(booking)}
                     className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg px-4"
                   >
-                    Start Job
+                    Verify OTP
                   </button>
                 </div>
                 {otpErrors[booking.id] && (
                   <p className="text-xs text-red-600">{otpErrors[booking.id]}</p>
                 )}
+                {otpVerified[booking.id] && (
+                  <p className="text-xs text-green-600">OTP verified ✓</p>
+                )}
+
+                <button
+                  onClick={() => startJob(booking)}
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium rounded-lg py-2.5 transition"
+                >
+                  Start Job
+                </button>
               </div>
             )}
 
