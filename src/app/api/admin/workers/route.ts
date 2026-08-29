@@ -4,10 +4,14 @@ import { requireStaffManager } from "@/lib/supabase/requireAdmin";
 import { phoneToSyntheticEmail } from "@/lib/phoneAuth";
 
 export async function POST(request: Request) {
-  const { error: authError } = await requireStaffManager();
+  const {
+    error: authError,
+    role: requesterRole,
+    location: requesterLocation,
+  } = await requireStaffManager();
   if (authError) return authError;
 
-  const { name, phone, password } = await request.json();
+  const { name, phone, password, location: requestedLocation } = await request.json();
   if (!name || !phone || !password) {
     return NextResponse.json(
       { error: "Name, phone and password are required" },
@@ -19,6 +23,13 @@ export async function POST(request: Request) {
       { error: "Password must be at least 4 characters" },
       { status: 400 }
     );
+  }
+
+  // Admins may assign Staff to any mall; Supervisors can only add Staff to
+  // their own mall, regardless of what the client sends.
+  const location = requesterRole === "admin" ? requestedLocation : requesterLocation;
+  if (!location) {
+    return NextResponse.json({ error: "Location is required" }, { status: 400 });
   }
 
   const admin = createAdminClient();
@@ -43,7 +54,7 @@ export async function POST(request: Request) {
 
   const { data: worker, error: workerError } = await admin
     .from("workers")
-    .insert({ name, phone, available: true })
+    .insert({ name, phone, available: true, location })
     .select()
     .single();
 

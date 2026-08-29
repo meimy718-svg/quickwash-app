@@ -20,6 +20,9 @@ create table if not exists workers (
   phone text,
   email text unique,
   available boolean default true,
+  -- Which mall/location this staff member belongs to; a Supervisor can only
+  -- see/manage Staff at their own assigned location.
+  location text,
   created_at timestamp with time zone default now()
 );
 
@@ -136,14 +139,21 @@ create policy "locations: admin can manage"
   with check ((select role from current_profile()) = 'admin');
 
 -- workers ------------------------------------------------------
-create policy "workers: staff can read"
-  on workers for select
-  using (auth.role() = 'authenticated');
-
-create policy "workers: admin and operator can manage"
+create policy "workers: admin can manage"
   on workers for all
-  using ((select role from current_profile()) in ('admin', 'operator'))
-  with check ((select role from current_profile()) in ('admin', 'operator'));
+  using ((select role from current_profile()) = 'admin')
+  with check ((select role from current_profile()) = 'admin');
+
+create policy "workers: operator can manage own location"
+  on workers for all
+  using (
+    (select role from current_profile()) = 'operator'
+    and location = (select location from current_profile())
+  )
+  with check (
+    (select role from current_profile()) = 'operator'
+    and location = (select location from current_profile())
+  );
 
 -- services -------------------------------------------------------
 -- Public read (customers on /book have no login) — nothing sensitive in a

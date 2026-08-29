@@ -171,8 +171,11 @@ export default function TeamManagement() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [viewer, setViewer] = useState<{ role: string; location: string | null } | null>(
+    null
+  );
 
-  const [staffForm, setStaffForm] = useState({ name: "", phone: "", password: "" });
+  const [staffForm, setStaffForm] = useState({ name: "", phone: "", password: "", location: "" });
   const [staffSubmitting, setStaffSubmitting] = useState(false);
   const [staffError, setStaffError] = useState<string | null>(null);
   const [staffSuccess, setStaffSuccess] = useState(false);
@@ -201,6 +204,19 @@ export default function TeamManagement() {
     if (data) setLocations(data as Location[]);
   }, [supabase]);
 
+  const loadViewer = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("profiles")
+      .select("role, location")
+      .eq("id", user.id)
+      .single();
+    if (data) setViewer(data);
+  }, [supabase]);
+
   const refresh = useCallback(() => {
     loadWorkers();
     loadProfiles();
@@ -209,8 +225,10 @@ export default function TeamManagement() {
   useEffect(() => {
     refresh();
     loadLocations();
-  }, [refresh, loadLocations]);
+    loadViewer();
+  }, [refresh, loadLocations, loadViewer]);
 
+  const isAdminViewer = viewer?.role === "admin";
   const locationNames = locations.map((l) => l.name);
   const supervisors = profiles.filter((p) => p.role === "operator");
   const workerProfileByWorkerId = new Map(
@@ -238,7 +256,7 @@ export default function TeamManagement() {
     }
 
     setStaffSuccess(true);
-    setStaffForm({ name: "", phone: "", password: "" });
+    setStaffForm({ name: "", phone: "", password: "", location: "" });
     refresh();
   }
 
@@ -279,6 +297,11 @@ export default function TeamManagement() {
     <div className="space-y-8">
       <section className="space-y-3">
         <h2 className="font-semibold text-slate-900">Staff</h2>
+        {!isAdminViewer && viewer?.location && (
+          <p className="text-xs text-slate-500">
+            You can only see and manage Staff at {viewer.location}.
+          </p>
+        )}
 
         <form
           onSubmit={handleAddStaff}
@@ -309,10 +332,29 @@ export default function TeamManagement() {
             onChange={(e) => setStaffForm((f) => ({ ...f, password: e.target.value }))}
             className="input"
           />
+          {isAdminViewer && (
+            <select
+              required
+              value={staffForm.location}
+              onChange={(e) => setStaffForm((f) => ({ ...f, location: e.target.value }))}
+              className="input sm:col-span-2"
+            >
+              <option value="" disabled>
+                Select mall / location
+              </option>
+              {locationNames.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             type="submit"
-            disabled={staffSubmitting}
-            className="sm:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
+            disabled={staffSubmitting || (isAdminViewer && locationNames.length === 0)}
+            className={`bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2 ${
+              isAdminViewer ? "" : "sm:col-span-3"
+            }`}
           >
             {staffSubmitting ? "Adding..." : "Add Staff"}
           </button>
@@ -339,6 +381,8 @@ export default function TeamManagement() {
                 userId={profile?.id}
                 name={worker.name}
                 phone={worker.phone ?? ""}
+                location={worker.location}
+                locationOptions={isAdminViewer ? locationNames : undefined}
                 onSaved={refresh}
                 extra={
                   <button

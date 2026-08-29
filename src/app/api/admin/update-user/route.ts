@@ -4,7 +4,11 @@ import { requireStaffManager } from "@/lib/supabase/requireAdmin";
 import { phoneToSyntheticEmail } from "@/lib/phoneAuth";
 
 export async function POST(request: Request) {
-  const { error: authError, role: requesterRole } = await requireStaffManager();
+  const {
+    error: authError,
+    role: requesterRole,
+    location: requesterLocation,
+  } = await requireStaffManager();
   if (authError) return authError;
 
   const { userId, name, phone, password, location } = await request.json();
@@ -38,6 +42,24 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Admin access required" }, { status: 403 });
   }
 
+  // This route uses the service-role client, which bypasses the mall-scoped
+  // RLS a Supervisor is normally limited by — so enforce the same boundary
+  // here explicitly: a Supervisor can only edit Staff at their own mall.
+  if (targetProfile.role === "worker" && requesterRole === "operator") {
+    const { data: targetWorker } = await admin
+      .from("workers")
+      .select("location")
+      .eq("id", targetProfile.worker_id)
+      .single();
+
+    if (!targetWorker || targetWorker.location !== requesterLocation) {
+      return NextResponse.json(
+        { error: "You can only edit staff at your own mall" },
+        { status: 403 }
+      );
+    }
+  }
+
   const syntheticEmail = phoneToSyntheticEmail(phone);
 
   const { error: updateAuthError } = await admin.auth.admin.updateUserById(userId, {
@@ -64,9 +86,16 @@ export async function POST(request: Request) {
   }
 
   if (targetProfile.role === "worker" && targetProfile.worker_id) {
+    // Only an Admin may reassign which mall a Staff member belongs to —
+    // a Supervisor's own mall-scoped RLS wouldn't stop this route (it uses
+    // the service-role client), so the restriction is enforced here instead.
     const { error: workerError } = await admin
       .from("workers")
-      .update({ name, phone })
+      .update({
+        name,
+        phone,
+        ...(requesterRole === "admin" && location ? { location } : {}),
+      })
       .eq("id", targetProfile.worker_id);
 
     if (workerError) {

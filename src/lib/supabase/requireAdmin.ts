@@ -14,12 +14,13 @@ async function requireRole(allowedRoles: UserRole[]) {
       error: NextResponse.json({ error: "Not authenticated" }, { status: 401 }),
       role: null,
       userId: null,
+      location: null,
     };
   }
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, location")
     .eq("id", user.id)
     .single();
 
@@ -28,10 +29,16 @@ async function requireRole(allowedRoles: UserRole[]) {
       error: NextResponse.json({ error: "Access denied" }, { status: 403 }),
       role: null,
       userId: null,
+      location: null,
     };
   }
 
-  return { error: null, role: profile.role as UserRole, userId: user.id };
+  return {
+    error: null,
+    role: profile.role as UserRole,
+    userId: user.id,
+    location: profile.location as string | null,
+  };
 }
 
 // Admin-only actions (locations, and anything only the owner should do).

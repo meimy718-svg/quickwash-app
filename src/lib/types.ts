@@ -27,6 +27,7 @@ export interface Worker {
   phone: string | null;
   email: string | null;
   available: boolean;
+  location: string | null;
   created_at: string;
 }
 
