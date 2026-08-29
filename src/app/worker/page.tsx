@@ -170,13 +170,13 @@ export default function WorkerPage() {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <PhotoUploadButton
-                    label="Before Photo"
+                    label="Before Photo (optional)"
                     count={booking.photos_before?.length ?? 0}
                     uploading={uploading[`${booking.id}-before`]}
                     onSelect={(file) => uploadPhoto(booking, "before", file)}
                   />
                   <PhotoUploadButton
-                    label="After Photo"
+                    label="After Photo (optional)"
                     count={booking.photos_after?.length ?? 0}
                     uploading={uploading[`${booking.id}-after`]}
                     onSelect={(file) => uploadPhoto(booking, "after", file)}
@@ -185,18 +185,10 @@ export default function WorkerPage() {
 
                 <button
                   onClick={() => completeJob(booking)}
-                  disabled={
-                    !(booking.photos_before?.length) || !(booking.photos_after?.length)
-                  }
                   className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-40 text-white text-sm font-medium rounded-lg py-2.5 transition"
                 >
                   Complete Job
                 </button>
-                {!(booking.photos_before?.length && booking.photos_after?.length) && (
-                  <p className="text-xs text-slate-400 text-center">
-                    Upload a before and after photo to complete this job.
-                  </p>
-                )}
               </div>
             )}
           </div>
