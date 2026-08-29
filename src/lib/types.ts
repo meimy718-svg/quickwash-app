@@ -43,6 +43,7 @@ export interface Booking {
   worker_id: string | null;
   photos_before: string[] | null;
   photos_after: string[] | null;
+  device_id: string | null;
   created_at: string;
   updated_at: string;
 }

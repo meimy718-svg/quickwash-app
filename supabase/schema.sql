@@ -39,9 +39,12 @@ create table if not exists bookings (
   worker_id uuid references workers(id),
   photos_before text[],
   photos_after text[],
+  device_id text,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
+
+create index if not exists bookings_device_id_idx on bookings (device_id);
 
 -- profiles: links a Supabase Auth user to a QuickWash role (admin / operator / worker).
 -- Needed because auth.users alone has no concept of role, and /dashboard, /worker and
