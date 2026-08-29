@@ -192,7 +192,7 @@ function BookingForm() {
                   key={car.car_number}
                   type="button"
                   onClick={() => bookAgain(car)}
-                  className="text-sm rounded-full border border-slate-300 px-3 py-1.5 hover:border-blue-400 hover:bg-blue-50 transition"
+                  className="text-sm text-slate-700 rounded-full border border-slate-300 px-3 py-1.5 hover:border-blue-400 hover:bg-blue-50 transition"
                 >
                   {car.car_number} ({car.car_color})
                 </button>
@@ -289,8 +289,8 @@ function BookingForm() {
                   key={option}
                   className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition ${
                     keyOption === option
-                      ? "border-blue-600 bg-blue-50"
-                      : "border-slate-300"
+                      ? "border-blue-600 bg-blue-50 text-slate-900 font-medium"
+                      : "border-slate-300 text-slate-700"
                   }`}
                 >
                   <input
