@@ -37,6 +37,7 @@ export interface Booking {
   wash_type: WashType;
   key_option: KeyOption;
   key_status: KeyStatus;
+  key_handover_note: string | null;
   status: BookingStatus;
   location: string;
   otp: string;

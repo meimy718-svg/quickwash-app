@@ -191,6 +191,13 @@ export default function DashboardPage() {
                 </div>
               )}
 
+              {booking.key_option === "Drop at info desk" && booking.key_handover_note && (
+                <div className="bg-slate-50 rounded-lg px-3 py-2">
+                  <p className="text-xs text-slate-500">Key handover note</p>
+                  <p className="text-sm text-slate-700">{booking.key_handover_note}</p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs text-slate-500 mb-1">Assign staff</label>
                 <select

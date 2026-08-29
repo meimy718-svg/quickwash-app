@@ -13,6 +13,11 @@ const KEY_OPTIONS: KeyOption[] = [
   "Drive myself",
   "Drop at info desk",
 ];
+const KEY_OPTION_LABELS: Record<KeyOption, string> = {
+  "Hand key to worker": "Collect it from me",
+  "Drive myself": "Drive myself",
+  "Drop at info desk": "Drop at info desk",
+};
 
 interface BookingResult {
   id: string;
@@ -46,6 +51,7 @@ function BookingForm() {
   const [parkingSlot, setParkingSlot] = useState("");
   const [washType, setWashType] = useState<WashType>("Basic");
   const [keyOption, setKeyOption] = useState<KeyOption>("Drive myself");
+  const [keyHandoverNote, setKeyHandoverNote] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,6 +96,8 @@ function BookingForm() {
       wash_type: washType,
       key_option: keyOption,
       key_status: keyOption === "Hand key to worker" ? "awaiting" : "none",
+      key_handover_note:
+        keyOption === "Drop at info desk" ? keyHandoverNote || null : null,
       status: "pending",
       location,
       otp,
@@ -168,6 +176,7 @@ function BookingForm() {
               setParkingSlot("");
               setWashType("Basic");
               setKeyOption("Drive myself");
+              setKeyHandoverNote("");
             }}
             className="w-full text-slate-500 text-sm underline"
           >
@@ -282,7 +291,7 @@ function BookingForm() {
             </div>
           </Field>
 
-          <Field label="Key Option">
+          <Field label="Key Handover Option">
             <div className="space-y-2">
               {KEY_OPTIONS.map((option) => (
                 <label
@@ -299,10 +308,24 @@ function BookingForm() {
                     checked={keyOption === option}
                     onChange={() => setKeyOption(option)}
                   />
-                  {option}
+                  {KEY_OPTION_LABELS[option]}
                 </label>
               ))}
             </div>
+
+            {keyOption === "Drop at info desk" && (
+              <div className="mt-2">
+                <label className="block text-xs font-medium text-slate-700 mb-1">
+                  How will you hand over your key? (optional)
+                </label>
+                <input
+                  value={keyHandoverNote}
+                  onChange={(e) => setKeyHandoverNote(e.target.value)}
+                  placeholder="e.g. Leaving it with the security guard at Gate 2"
+                  className="input"
+                />
+              </div>
+            )}
           </Field>
 
           <button

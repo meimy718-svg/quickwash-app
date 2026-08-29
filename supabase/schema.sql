@@ -40,6 +40,7 @@ create table if not exists bookings (
   photos_before text[],
   photos_after text[],
   device_id text,
+  key_handover_note text,
   created_at timestamp with time zone default now(),
   updated_at timestamp with time zone default now()
 );
