@@ -112,7 +112,7 @@ export default function WorkerPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <StaffHeader title="Worker View" />
+      <StaffHeader title="Staff View" />
 
       <div className="px-4 py-4 max-w-md mx-auto space-y-3">
         {loading && <p className="text-sm text-slate-500">Loading your jobs...</p>}

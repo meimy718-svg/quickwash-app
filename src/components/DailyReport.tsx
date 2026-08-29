@@ -114,7 +114,7 @@ export default function DailyReport({ workers }: { workers: Worker[] }) {
       <div className="grid sm:grid-cols-3 gap-3">
         <ReportCard title="By Status" counts={byStatus} />
         <ReportCard title="By Wash Type" counts={byWashType} />
-        <ReportCard title="By Worker" counts={byWorker} />
+        <ReportCard title="By Staff" counts={byWorker} />
       </div>
     </div>
   );

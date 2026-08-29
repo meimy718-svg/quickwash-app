@@ -194,7 +194,7 @@ export default function AdminPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-semibold text-slate-900">Workers</h2>
+          <h2 className="font-semibold text-slate-900">Staff</h2>
 
           <form
             onSubmit={handleAddWorker}
@@ -226,7 +226,7 @@ export default function AdminPage() {
               disabled={workerSubmitting}
               className="sm:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
             >
-              {workerSubmitting ? "Adding..." : "Add Worker"}
+              {workerSubmitting ? "Adding..." : "Add Staff"}
             </button>
           </form>
 
@@ -237,7 +237,7 @@ export default function AdminPage() {
           )}
           {lastCreatedPassword && (
             <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-              Worker created. Temporary password: <strong>{lastCreatedPassword}</strong> —
+              Staff created. Temporary password: <strong>{lastCreatedPassword}</strong> —
               share this with them so they can sign in at /login.
             </p>
           )}
@@ -270,7 +270,7 @@ export default function AdminPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-semibold text-slate-900">Operators</h2>
+          <h2 className="font-semibold text-slate-900">Supervisors</h2>
 
           <form
             onSubmit={handleAddOperator}
@@ -289,7 +289,7 @@ export default function AdminPage() {
               disabled={operatorSubmitting}
               className="bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4"
             >
-              {operatorSubmitting ? "Adding..." : "Add Operator"}
+              {operatorSubmitting ? "Adding..." : "Add Supervisor"}
             </button>
           </form>
 
@@ -300,7 +300,7 @@ export default function AdminPage() {
           )}
           {lastCreatedOperatorPassword && (
             <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-              Operator created. Temporary password:{" "}
+              Supervisor created. Temporary password:{" "}
               <strong>{lastCreatedOperatorPassword}</strong> — share this with them so they
               can sign in at /login.
             </p>
@@ -316,7 +316,7 @@ export default function AdminPage() {
               </div>
             ))}
             {operators.length === 0 && (
-              <p className="text-sm text-slate-400">No operators added yet.</p>
+              <p className="text-sm text-slate-400">No supervisors added yet.</p>
             )}
           </div>
         </section>

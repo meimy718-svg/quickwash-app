@@ -96,7 +96,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <StaffHeader title="Operator Dashboard" />
+      <StaffHeader title="Supervisor Dashboard" />
 
       <div className="px-4 py-4 max-w-3xl mx-auto space-y-4">
         <div className="flex gap-2 overflow-x-auto pb-1">
@@ -170,7 +170,7 @@ export default function DashboardPage() {
               )}
 
               <div>
-                <label className="block text-xs text-slate-500 mb-1">Assign worker</label>
+                <label className="block text-xs text-slate-500 mb-1">Assign staff</label>
                 <select
                   value={booking.worker_id ?? ""}
                   onChange={(e) => assignWorker(booking.id, e.target.value)}

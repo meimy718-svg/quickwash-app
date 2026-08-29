@@ -11,7 +11,7 @@ const NAV_BY_ROLE: Record<UserRole, { href: string; label: string }[]> = {
     { href: "/dashboard", label: "Dashboard" },
   ],
   operator: [{ href: "/dashboard", label: "Dashboard" }],
-  worker: [{ href: "/worker", label: "Worker" }],
+  worker: [{ href: "/worker", label: "Staff" }],
 };
 
 export default function StaffHeader({ title }: { title: string }) {
