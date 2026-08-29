@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { createClient } from "@/lib/supabase/client";
 import StaffHeader from "@/components/StaffHeader";
 import DailyReport from "@/components/DailyReport";
+import PrintableQrSign from "@/components/PrintableQrSign";
 import type { Location, Profile, Worker } from "@/lib/types";
 
 export default function AdminPage() {
@@ -13,6 +14,7 @@ export default function AdminPage() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [locationName, setLocationName] = useState("");
   const [generatingQr, setGeneratingQr] = useState(false);
+  const [printLocation, setPrintLocation] = useState<Location | null>(null);
 
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [workerForm, setWorkerForm] = useState({ name: "", phone: "", email: "" });
@@ -135,8 +137,15 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <StaffHeader title="Admin Panel" />
+    <>
+      {printLocation && (
+        <PrintableQrSign
+          location={printLocation}
+          onDone={() => setPrintLocation(null)}
+        />
+      )}
+      <div className="min-h-screen bg-slate-50 print:hidden">
+        <StaffHeader title="Admin Panel" />
 
       <div className="px-4 py-4 max-w-3xl mx-auto space-y-8">
         <section className="space-y-3">
@@ -173,6 +182,12 @@ export default function AdminPage() {
                   />
                 )}
                 <p className="text-sm font-medium text-slate-700">{loc.name}</p>
+                <button
+                  onClick={() => setPrintLocation(loc)}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                >
+                  Print sign
+                </button>
               </div>
             ))}
           </div>
@@ -311,6 +326,7 @@ export default function AdminPage() {
           <DailyReport workers={workers} />
         </section>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
