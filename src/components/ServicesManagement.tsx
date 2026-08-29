@@ -45,18 +45,28 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
   }
 
   async function toggleAvailable() {
-    await supabase
+    setError(null);
+    const { error: updateError } = await supabase
       .from("services")
       .update({ available: !service.available })
       .eq("id", service.id);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
     onSaved();
   }
 
   async function toggleShowPrice() {
-    await supabase
+    setError(null);
+    const { error: updateError } = await supabase
       .from("services")
       .update({ show_price: !service.show_price })
       .eq("id", service.id);
+    if (updateError) {
+      setError(updateError.message);
+      return;
+    }
     onSaved();
   }
 
@@ -111,7 +121,9 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
   }
 
   return (
-    <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3">
+    <div className="bg-white rounded-xl border border-slate-200 px-4 py-3 space-y-1">
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <div className="flex items-center justify-between">
       <div>
         <p className="font-medium text-slate-900">
           {service.name}
@@ -150,6 +162,7 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
         >
           {service.available ? "Available" : "Unavailable"}
         </button>
+      </div>
       </div>
     </div>
   );
