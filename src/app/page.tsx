@@ -4,7 +4,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4">
       <div className="text-center space-y-4 max-w-sm">
-        <h1 className="text-3xl font-bold text-slate-900">QuickWash</h1>
+        <h1 className="text-3xl font-bold text-slate-900">4OR CarSpa</h1>
         <p className="text-slate-500 text-sm">
           Scan the QR code at your mall parking location, or use the link below to book a
           car wash.

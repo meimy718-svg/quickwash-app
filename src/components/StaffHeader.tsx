@@ -47,7 +47,7 @@ export default function StaffHeader({ title }: { title: string }) {
     <header className="sticky top-0 z-10 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
       <div className="flex items-center gap-4">
         <div>
-          <p className="text-xs text-slate-400 leading-none">QuickWash</p>
+          <p className="text-xs text-slate-400 leading-none">4OR CarSpa</p>
           <h1 className="text-lg font-semibold text-slate-900">{title}</h1>
         </div>
         {navLinks.length > 1 && (

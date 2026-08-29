@@ -73,7 +73,7 @@ export default function SignupPage() {
         <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-6 text-center space-y-3">
           <h1 className="text-lg font-semibold text-slate-900">Admin already set up</h1>
           <p className="text-sm text-slate-500">
-            QuickWash already has an admin account. Ask your admin to add you as staff, or
+            4OR CarSpa already has an admin account. Ask your admin to add you as staff, or
             sign in below.
           </p>
           <a
@@ -94,7 +94,7 @@ export default function SignupPage() {
         className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4"
       >
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Set up QuickWash</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Set up 4OR CarSpa</h1>
           <p className="text-sm text-slate-500 mt-1">
             Create the first admin account to get started.
           </p>

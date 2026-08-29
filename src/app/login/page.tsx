@@ -58,7 +58,7 @@ function LoginForm() {
     setLoading(false);
 
     if (!profile) {
-      setError("No QuickWash role is assigned to this account yet.");
+      setError("No 4OR CarSpa role is assigned to this account yet.");
       return;
     }
 
@@ -73,7 +73,7 @@ function LoginForm() {
         className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4"
       >
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">QuickWash Staff Login</h1>
+          <h1 className="text-xl font-semibold text-slate-900">4OR CarSpa Staff Login</h1>
           <p className="text-sm text-slate-500 mt-1">
             Supervisor, staff and admin access.
           </p>

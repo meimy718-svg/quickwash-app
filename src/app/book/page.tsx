@@ -115,7 +115,7 @@ function BookingForm() {
 
   if (result) {
     const statusUrl = `${window.location.origin}/status/${result.id}`;
-    const summary = `QuickWash Booking Confirmed!\nName: ${result.name}\nCar: ${result.car_number}\nWash: ${result.wash_type}\nLocation: ${result.location}\nBooking ID: ${result.id}\nOTP: ${result.otp}\n\nShow this OTP to the QuickWash team when handing over your key.\n\nCheck your status anytime: ${statusUrl}`;
+    const summary = `4OR CarSpa Booking Confirmed!\nName: ${result.name}\nCar: ${result.car_number}\nWash: ${result.wash_type}\nLocation: ${result.location}\nBooking ID: ${result.id}\nOTP: ${result.otp}\n\nShow this OTP to the 4OR CarSpa team when handing over your key.\n\nCheck your status anytime: ${statusUrl}`;
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(summary)}`;
 
     return (
@@ -206,7 +206,7 @@ function BookingForm() {
           className="w-full bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4"
         >
           <div>
-            <h1 className="text-xl font-semibold text-slate-900">QuickWash</h1>
+            <h1 className="text-xl font-semibold text-slate-900">4OR CarSpa</h1>
             <p className="text-sm text-slate-500 mt-1">Booking for {location}</p>
           </div>
 

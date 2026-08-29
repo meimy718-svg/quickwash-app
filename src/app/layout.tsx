@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "QuickWash",
+  title: "4OR CarSpa",
   description: "Mall parking car wash booking",
 };
 

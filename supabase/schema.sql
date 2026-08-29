@@ -1,4 +1,4 @@
--- QuickWash database schema
+-- 4OR CarSpa database schema
 -- Run this in the Supabase SQL editor (or via `supabase db push`) on a fresh project.
 
 create extension if not exists "pgcrypto";
@@ -46,7 +46,7 @@ create table if not exists bookings (
 
 create index if not exists bookings_device_id_idx on bookings (device_id);
 
--- profiles: links a Supabase Auth user to a QuickWash role (admin / operator / worker).
+-- profiles: links a Supabase Auth user to a 4OR CarSpa role (admin / operator / worker).
 -- Needed because auth.users alone has no concept of role, and /dashboard, /worker and
 -- /admin each need to know who is allowed in and (for workers) which worker row they are.
 create table if not exists profiles (

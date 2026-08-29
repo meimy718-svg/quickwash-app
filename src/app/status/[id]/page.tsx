@@ -49,7 +49,7 @@ export default async function BookingStatusPage({
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-sm border border-slate-200 p-6 space-y-4">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs text-slate-400">QuickWash</p>
+            <p className="text-xs text-slate-400">4OR CarSpa</p>
             <h1 className="text-lg font-semibold text-slate-900">
               {booking.car_number} ({booking.car_color})
             </h1>

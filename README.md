@@ -1,4 +1,4 @@
-# QuickWash
+# 4OR CarSpa
 
 Mobile-first car wash booking app for mall parking locations. Customers scan a QR
 code at their parking spot, book a wash with no login required, and get a 4-digit

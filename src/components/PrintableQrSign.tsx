@@ -20,7 +20,7 @@ export default function PrintableQrSign({
 
   return (
     <div className="hidden print:flex print:flex-col print:items-center print:justify-center print:min-h-screen p-12 text-center">
-      <p className="text-sm tracking-widest text-slate-500 uppercase mb-1">QuickWash</p>
+      <p className="text-sm tracking-widest text-slate-500 uppercase mb-1">4OR CarSpa</p>
       <h1 className="text-3xl font-bold text-slate-900 mb-6">{location.name}</h1>
 
       {location.qr_code_url && (
@@ -54,7 +54,7 @@ export default function PrintableQrSign({
       </ol>
 
       <p className="text-sm text-slate-400 mt-10">
-        Questions? Ask any QuickWash team member on-site.
+        Questions? Ask any 4OR CarSpa team member on-site.
       </p>
     </div>
   );
