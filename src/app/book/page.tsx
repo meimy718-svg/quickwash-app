@@ -5,9 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrCreateDeviceId } from "@/lib/deviceId";
 import StatusPill from "@/components/StatusPill";
-import type { Booking, KeyOption, WashType } from "@/lib/types";
+import type { Booking, KeyOption, Service, WashType } from "@/lib/types";
 
-const WASH_TYPES: WashType[] = ["Basic", "Premium", "Full Detail"];
 const KEY_OPTIONS: KeyOption[] = [
   "Hand key to worker",
   "Drive myself",
@@ -49,7 +48,7 @@ function BookingForm() {
   const [carNumber, setCarNumber] = useState("");
   const [carColor, setCarColor] = useState("");
   const [parkingSlot, setParkingSlot] = useState("");
-  const [washType, setWashType] = useState<WashType>("Basic");
+  const [washType, setWashType] = useState<WashType>("");
   const [keyOption, setKeyOption] = useState<KeyOption>("Drive myself");
   const [keyHandoverNote, setKeyHandoverNote] = useState("");
 
@@ -59,6 +58,7 @@ function BookingForm() {
 
   const [history, setHistory] = useState<Booking[]>([]);
   const [deviceId, setDeviceId] = useState("");
+  const [services, setServices] = useState<Service[]>([]);
 
   useEffect(() => {
     const id = getOrCreateDeviceId();
@@ -68,6 +68,18 @@ function BookingForm() {
       .then((res) => res.json())
       .then((json) => setHistory(json.bookings ?? []))
       .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("services")
+      .select("*")
+      .eq("available", true)
+      .order("created_at", { ascending: true })
+      .then(({ data }) => {
+        if (data) setServices(data as Service[]);
+      });
   }, []);
 
   function bookAgain(car: Booking) {
@@ -80,6 +92,12 @@ function BookingForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    if (!washType) {
+      setError("Please select a service");
+      return;
+    }
+
     setSubmitting(true);
 
     const supabase = createClient();
@@ -174,7 +192,7 @@ function BookingForm() {
             onClick={() => {
               setResult(null);
               setParkingSlot("");
-              setWashType("Basic");
+              setWashType("");
               setKeyOption("Drive myself");
               setKeyHandoverNote("");
             }}
@@ -272,23 +290,36 @@ function BookingForm() {
             />
           </Field>
 
-          <Field label="Wash Type">
-            <div className="grid grid-cols-3 gap-2">
-              {WASH_TYPES.map((type) => (
-                <button
-                  type="button"
-                  key={type}
-                  onClick={() => setWashType(type)}
-                  className={`text-sm rounded-lg border px-2 py-2 transition ${
-                    washType === type
-                      ? "bg-blue-600 border-blue-600 text-white"
-                      : "border-slate-300 text-slate-700"
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
+          <Field label="Select Services">
+            {services.length === 0 ? (
+              <p className="text-sm text-slate-400">
+                No services available right now. Please check with our team.
+              </p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {services.map((service) => (
+                  <button
+                    type="button"
+                    key={service.id}
+                    onClick={() => setWashType(service.name)}
+                    className={`text-sm rounded-lg border px-2 py-2 transition ${
+                      washType === service.name
+                        ? "bg-blue-600 border-blue-600 text-white"
+                        : "border-slate-300 text-slate-700"
+                    }`}
+                  >
+                    <div>{service.name}</div>
+                    <div
+                      className={`text-xs ${
+                        washType === service.name ? "text-blue-100" : "text-slate-500"
+                      }`}
+                    >
+                      ₹{service.price}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
           </Field>
 
           <Field label="Key Handover Option">

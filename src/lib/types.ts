@@ -1,4 +1,7 @@
-export type WashType = "Basic" | "Premium" | "Full Detail";
+// The set of wash types used to be a fixed Basic/Premium/Full Detail union.
+// It's now whatever name an admin/supervisor gives a Service, so this is just
+// the free-text name of whichever service the customer picked.
+export type WashType = string;
 
 export type KeyOption =
   | "Hand key to worker"
@@ -23,6 +26,14 @@ export interface Worker {
   name: string;
   phone: string | null;
   email: string | null;
+  available: boolean;
+  created_at: string;
+}
+
+export interface Service {
+  id: string;
+  name: string;
+  price: number;
   available: boolean;
   created_at: string;
 }

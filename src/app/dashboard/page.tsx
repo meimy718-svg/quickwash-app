@@ -6,6 +6,7 @@ import { playAlertSound } from "@/lib/playAlert";
 import StaffHeader from "@/components/StaffHeader";
 import StatusPill from "@/components/StatusPill";
 import TeamManagement from "@/components/TeamManagement";
+import ServicesManagement from "@/components/ServicesManagement";
 import type { Booking, BookingStatus, KeyStatus, Worker } from "@/lib/types";
 
 type Filter = "all" | BookingStatus;
@@ -31,7 +32,7 @@ export default function DashboardPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState<"bookings" | "team">("bookings");
+  const [view, setView] = useState<"bookings" | "team" | "services">("bookings");
 
   const loadBookings = useCallback(async () => {
     const { data } = await supabase
@@ -102,7 +103,7 @@ export default function DashboardPage() {
 
       <div className="px-4 py-4 max-w-3xl mx-auto space-y-4">
         <div className="flex gap-2">
-          {(["bookings", "team"] as const).map((v) => (
+          {(["bookings", "team", "services"] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
@@ -112,12 +113,13 @@ export default function DashboardPage() {
                   : "border-slate-300 text-slate-600"
               }`}
             >
-              {v === "bookings" ? "Bookings" : "Team"}
+              {v === "bookings" ? "Bookings" : v === "team" ? "Team" : "Services"}
             </button>
           ))}
         </div>
 
         {view === "team" && <TeamManagement />}
+        {view === "services" && <ServicesManagement />}
 
         {view === "bookings" && (
           <>

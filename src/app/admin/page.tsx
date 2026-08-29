@@ -7,6 +7,7 @@ import StaffHeader from "@/components/StaffHeader";
 import DailyReport from "@/components/DailyReport";
 import PrintableQrSign from "@/components/PrintableQrSign";
 import TeamManagement from "@/components/TeamManagement";
+import ServicesManagement from "@/components/ServicesManagement";
 import type { Location, Worker } from "@/lib/types";
 
 export default function AdminPage() {
@@ -110,6 +111,8 @@ export default function AdminPage() {
               ))}
             </div>
           </section>
+
+          <ServicesManagement />
 
           <TeamManagement />
 

@@ -23,6 +23,14 @@ create table if not exists workers (
   created_at timestamp with time zone default now()
 );
 
+create table if not exists services (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  price numeric not null,
+  available boolean default true,
+  created_at timestamp with time zone default now()
+);
+
 create table if not exists bookings (
   id uuid default gen_random_uuid() primary key,
   name text not null,
@@ -90,6 +98,7 @@ create trigger bookings_set_updated_at
 
 alter table locations enable row level security;
 alter table workers enable row level security;
+alter table services enable row level security;
 alter table bookings enable row level security;
 alter table profiles enable row level security;
 
@@ -130,6 +139,18 @@ create policy "workers: staff can read"
 
 create policy "workers: admin and operator can manage"
   on workers for all
+  using ((select role from current_profile()) in ('admin', 'operator'))
+  with check ((select role from current_profile()) in ('admin', 'operator'));
+
+-- services -------------------------------------------------------
+-- Public read (customers on /book have no login) — nothing sensitive in a
+-- service name/price.
+create policy "services: public can read"
+  on services for select
+  using (true);
+
+create policy "services: admin and operator can manage"
+  on services for all
   using ((select role from current_profile()) in ('admin', 'operator'))
   with check ((select role from current_profile()) in ('admin', 'operator'));
 
