@@ -100,7 +100,10 @@ function BookingForm() {
 
   const selectedServices = services.filter((s) => selectedServiceIds.has(s.id));
   const washType = selectedServices.map((s) => s.name).join(", ");
-  const totalPrice = selectedServices.reduce((sum, s) => sum + Number(s.price), 0);
+  const visibleTotal = selectedServices
+    .filter((s) => s.show_price)
+    .reduce((sum, s) => sum + Number(s.price), 0);
+  const hasHiddenPriceSelected = selectedServices.some((s) => !s.show_price);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -339,13 +342,15 @@ function BookingForm() {
                           </span>
                           {service.name}
                         </div>
-                        <div
-                          className={`text-xs ${
-                            selected ? "text-blue-100" : "text-slate-500"
-                          }`}
-                        >
-                          ₹{service.price}
-                        </div>
+                        {service.show_price && (
+                          <div
+                            className={`text-xs ${
+                              selected ? "text-blue-100" : "text-slate-500"
+                            }`}
+                          >
+                            ₹{service.price}
+                          </div>
+                        )}
                       </button>
                     );
                   })}
@@ -353,7 +358,11 @@ function BookingForm() {
                 {selectedServices.length > 0 && (
                   <div className="flex justify-between items-center mt-2 text-sm font-medium text-slate-700">
                     <span>Total</span>
-                    <span>₹{totalPrice}</span>
+                    <span>
+                      {visibleTotal > 0
+                        ? `₹${visibleTotal}${hasHiddenPriceSelected ? " + more" : ""}`
+                        : "Ask our team"}
+                    </span>
                   </div>
                 )}
               </>

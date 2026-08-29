@@ -35,6 +35,7 @@ export interface Service {
   name: string;
   price: number;
   available: boolean;
+  show_price: boolean;
   created_at: string;
 }
 

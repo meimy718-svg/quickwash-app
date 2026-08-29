@@ -52,6 +52,14 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
     onSaved();
   }
 
+  async function toggleShowPrice() {
+    await supabase
+      .from("services")
+      .update({ show_price: !service.show_price })
+      .eq("id", service.id);
+    onSaved();
+  }
+
   if (editing) {
     return (
       <form
@@ -105,7 +113,14 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
   return (
     <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3">
       <div>
-        <p className="font-medium text-slate-900">{service.name}</p>
+        <p className="font-medium text-slate-900">
+          {service.name}
+          {!service.show_price && (
+            <span className="ml-1 text-xs font-normal text-slate-400">
+              (price hidden from customers)
+            </span>
+          )}
+        </p>
         <p className="text-xs text-slate-500">₹{service.price}</p>
       </div>
       <div className="flex items-center gap-2">
@@ -114,6 +129,16 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
           className="text-xs font-medium text-blue-600 hover:text-blue-800"
         >
           Edit
+        </button>
+        <button
+          onClick={toggleShowPrice}
+          className={`text-xs font-medium rounded-full px-3 py-1 border ${
+            service.show_price
+              ? "text-blue-700 border-blue-300 bg-blue-50"
+              : "text-slate-500 border-slate-300 bg-slate-50"
+          }`}
+        >
+          {service.show_price ? "Price shown" : "Price hidden"}
         </button>
         <button
           onClick={toggleAvailable}
@@ -133,7 +158,7 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
 export default function ServicesManagement() {
   const supabase = useMemo(() => createClient(), []);
   const [services, setServices] = useState<Service[]>([]);
-  const [form, setForm] = useState({ name: "", price: "" });
+  const [form, setForm] = useState({ name: "", price: "", showPrice: true });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,9 +185,12 @@ export default function ServicesManagement() {
     setSubmitting(true);
     setError(null);
 
-    const { error: insertError } = await supabase
-      .from("services")
-      .insert({ name: form.name.trim(), price, available: true });
+    const { error: insertError } = await supabase.from("services").insert({
+      name: form.name.trim(),
+      price,
+      available: true,
+      show_price: form.showPrice,
+    });
 
     setSubmitting(false);
 
@@ -171,7 +199,7 @@ export default function ServicesManagement() {
       return;
     }
 
-    setForm({ name: "", price: "" });
+    setForm({ name: "", price: "", showPrice: true });
     loadServices();
   }
 
@@ -207,6 +235,14 @@ export default function ServicesManagement() {
         >
           {submitting ? "Adding..." : "Add Service"}
         </button>
+        <label className="sm:col-span-3 flex items-center gap-2 text-sm text-slate-600">
+          <input
+            type="checkbox"
+            checked={form.showPrice}
+            onChange={(e) => setForm((f) => ({ ...f, showPrice: e.target.checked }))}
+          />
+          Show price to customers
+        </label>
       </form>
 
       {error && (

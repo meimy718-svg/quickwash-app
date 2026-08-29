@@ -28,6 +28,7 @@ create table if not exists services (
   name text not null,
   price numeric not null,
   available boolean default true,
+  show_price boolean default true,
   created_at timestamp with time zone default now()
 );
 
