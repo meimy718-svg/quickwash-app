@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrCreateDeviceId } from "@/lib/deviceId";
 import StatusPill from "@/components/StatusPill";
-import type { Booking, KeyOption, Service, WashType } from "@/lib/types";
+import type { Booking, KeyOption, Service } from "@/lib/types";
 
 const KEY_OPTIONS: KeyOption[] = [
   "Hand key to worker",
@@ -48,7 +48,7 @@ function BookingForm() {
   const [carNumber, setCarNumber] = useState("");
   const [carColor, setCarColor] = useState("");
   const [parkingSlot, setParkingSlot] = useState("");
-  const [washType, setWashType] = useState<WashType>("");
+  const [selectedServiceIds, setSelectedServiceIds] = useState<Set<string>>(new Set());
   const [keyOption, setKeyOption] = useState<KeyOption>("Drive myself");
   const [keyHandoverNote, setKeyHandoverNote] = useState("");
 
@@ -89,12 +89,25 @@ function BookingForm() {
     setCarColor(car.car_color);
   }
 
+  function toggleService(serviceId: string) {
+    setSelectedServiceIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(serviceId)) next.delete(serviceId);
+      else next.add(serviceId);
+      return next;
+    });
+  }
+
+  const selectedServices = services.filter((s) => selectedServiceIds.has(s.id));
+  const washType = selectedServices.map((s) => s.name).join(", ");
+  const totalPrice = selectedServices.reduce((sum, s) => sum + Number(s.price), 0);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!washType) {
-      setError("Please select a service");
+    if (selectedServices.length === 0) {
+      setError("Please select at least one service");
       return;
     }
 
@@ -192,7 +205,7 @@ function BookingForm() {
             onClick={() => {
               setResult(null);
               setParkingSlot("");
-              setWashType("");
+              setSelectedServiceIds(new Set());
               setKeyOption("Drive myself");
               setKeyHandoverNote("");
             }}
@@ -296,29 +309,54 @@ function BookingForm() {
                 No services available right now. Please check with our team.
               </p>
             ) : (
-              <div className="grid grid-cols-2 gap-2">
-                {services.map((service) => (
-                  <button
-                    type="button"
-                    key={service.id}
-                    onClick={() => setWashType(service.name)}
-                    className={`text-sm rounded-lg border px-2 py-2 transition ${
-                      washType === service.name
-                        ? "bg-blue-600 border-blue-600 text-white"
-                        : "border-slate-300 text-slate-700"
-                    }`}
-                  >
-                    <div>{service.name}</div>
-                    <div
-                      className={`text-xs ${
-                        washType === service.name ? "text-blue-100" : "text-slate-500"
-                      }`}
-                    >
-                      ₹{service.price}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              <>
+                <p className="text-xs text-slate-500 mb-1">
+                  You can select more than one service.
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  {services.map((service) => {
+                    const selected = selectedServiceIds.has(service.id);
+                    return (
+                      <button
+                        type="button"
+                        key={service.id}
+                        onClick={() => toggleService(service.id)}
+                        className={`text-sm rounded-lg border px-2 py-2 transition text-left ${
+                          selected
+                            ? "bg-blue-600 border-blue-600 text-white"
+                            : "border-slate-300 text-slate-700"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span
+                            className={`inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                              selected
+                                ? "bg-white border-white text-blue-600"
+                                : "border-slate-400"
+                            }`}
+                          >
+                            {selected && "✓"}
+                          </span>
+                          {service.name}
+                        </div>
+                        <div
+                          className={`text-xs ${
+                            selected ? "text-blue-100" : "text-slate-500"
+                          }`}
+                        >
+                          ₹{service.price}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedServices.length > 0 && (
+                  <div className="flex justify-between items-center mt-2 text-sm font-medium text-slate-700">
+                    <span>Total</span>
+                    <span>₹{totalPrice}</span>
+                  </div>
+                )}
+              </>
             )}
           </Field>
 
