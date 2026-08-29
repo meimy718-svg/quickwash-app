@@ -54,6 +54,7 @@ export default function DailyReport({ workers }: { workers: Worker[] }) {
   const supabase = useMemo(() => createClient(), []);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [locationFilter, setLocationFilter] = useState<string>("all");
 
   useEffect(() => {
     supabase
@@ -76,23 +77,44 @@ export default function DailyReport({ workers }: { workers: Worker[] }) {
     [bookings]
   );
 
-  const byStatus = useMemo(() => countBy(todaysBookings, (b) => b.status), [todaysBookings]);
-  const byWashType = useMemo(() => countBy(todaysBookings, (b) => b.wash_type), [todaysBookings]);
+  const locations = useMemo(
+    () => Array.from(new Set(bookings.map((b) => b.location))).sort(),
+    [bookings]
+  );
+
+  const todaysFiltered = useMemo(
+    () =>
+      locationFilter === "all"
+        ? todaysBookings
+        : todaysBookings.filter((b) => b.location === locationFilter),
+    [todaysBookings, locationFilter]
+  );
+
+  const byLocation = useMemo(() => countBy(todaysBookings, (b) => b.location), [todaysBookings]);
+  const byStatus = useMemo(() => countBy(todaysFiltered, (b) => b.status), [todaysFiltered]);
+  const byWashType = useMemo(
+    () => countBy(todaysFiltered, (b) => b.wash_type),
+    [todaysFiltered]
+  );
   const byWorker = useMemo(
     () =>
-      countBy(todaysBookings, (b) =>
+      countBy(todaysFiltered, (b) =>
         b.worker_id ? workerNameById.get(b.worker_id) ?? "Unknown" : "Unassigned"
       ),
-    [todaysBookings, workerNameById]
+    [todaysFiltered, workerNameById]
   );
 
   function exportCsv() {
-    const csv = toCsv(bookings, workerNameById);
+    const rows =
+      locationFilter === "all"
+        ? bookings
+        : bookings.filter((b) => b.location === locationFilter);
+    const csv = toCsv(rows, workerNameById);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `quickwash-bookings-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = `4or-carspa-bookings-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
@@ -101,17 +123,36 @@ export default function DailyReport({ workers }: { workers: Worker[] }) {
 
   return (
     <div className="space-y-4">
+      {locations.length > 1 && (
+        <div>
+          <label className="block text-xs text-slate-500 mb-1">Mall / Location</label>
+          <select
+            value={locationFilter}
+            onChange={(e) => setLocationFilter(e.target.value)}
+            className="input"
+          >
+            <option value="all">All locations</option>
+            {locations.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
-        <p className="text-sm text-slate-500">{todaysBookings.length} bookings today</p>
+        <p className="text-sm text-slate-500">{todaysFiltered.length} bookings today</p>
         <button
           onClick={exportCsv}
           className="text-sm font-medium text-blue-600 hover:text-blue-800"
         >
-          Export CSV (all bookings)
+          Export CSV ({locationFilter === "all" ? "all locations" : locationFilter})
         </button>
       </div>
 
       <div className="grid sm:grid-cols-3 gap-3">
+        {locations.length > 1 && <ReportCard title="By Mall / Location" counts={byLocation} />}
         <ReportCard title="By Status" counts={byStatus} />
         <ReportCard title="By Wash Type" counts={byWashType} />
         <ReportCard title="By Staff" counts={byWorker} />

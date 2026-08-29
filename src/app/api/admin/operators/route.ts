@@ -7,10 +7,10 @@ export async function POST(request: Request) {
   const { error: authError } = await requireStaffManager();
   if (authError) return authError;
 
-  const { name, phone, password } = await request.json();
-  if (!name || !phone || !password) {
+  const { name, phone, password, location } = await request.json();
+  if (!name || !phone || !password || !location) {
     return NextResponse.json(
-      { error: "Name, phone and password are required" },
+      { error: "Name, phone, password and location are required" },
       { status: 400 }
     );
   }
@@ -47,6 +47,7 @@ export async function POST(request: Request) {
     phone,
     name,
     role: "operator",
+    location,
   });
 
   if (profileError) {
@@ -54,5 +55,5 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: profileError.message }, { status: 400 });
   }
 
-  return NextResponse.json({ name, phone });
+  return NextResponse.json({ name, phone, location });
 }

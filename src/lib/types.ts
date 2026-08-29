@@ -68,5 +68,6 @@ export interface Profile {
   name: string | null;
   role: UserRole;
   worker_id: string | null;
+  location: string | null;
   created_at: string;
 }

@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   const { error: authError, role: requesterRole } = await requireStaffManager();
   if (authError) return authError;
 
-  const { userId, name, phone, password } = await request.json();
+  const { userId, name, phone, password, location } = await request.json();
   if (!userId || !name || !phone) {
     return NextResponse.json(
       { error: "userId, name and phone are required" },
@@ -51,7 +51,12 @@ export async function POST(request: Request) {
 
   const { error: profileError } = await admin
     .from("profiles")
-    .update({ name, phone, email: syntheticEmail })
+    .update({
+      name,
+      phone,
+      email: syntheticEmail,
+      ...(targetProfile.role === "operator" && location ? { location } : {}),
+    })
     .eq("id", userId);
 
   if (profileError) {

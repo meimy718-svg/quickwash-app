@@ -31,6 +31,7 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
+  const [locationFilter, setLocationFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"bookings" | "team" | "services">("bookings");
 
@@ -95,7 +96,13 @@ export default function DashboardPage() {
     await supabase.from("bookings").update({ key_status: next }).eq("id", booking.id);
   }
 
-  const filtered = bookings.filter((b) => filter === "all" || b.status === filter);
+  const locations = Array.from(new Set(bookings.map((b) => b.location))).sort();
+
+  const filtered = bookings.filter(
+    (b) =>
+      (filter === "all" || b.status === filter) &&
+      (locationFilter === "all" || b.location === locationFilter)
+  );
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -138,6 +145,24 @@ export default function DashboardPage() {
             </button>
           ))}
         </div>
+
+        {locations.length > 1 && (
+          <div>
+            <label className="block text-xs text-slate-500 mb-1">Mall / Location</label>
+            <select
+              value={locationFilter}
+              onChange={(e) => setLocationFilter(e.target.value)}
+              className="input"
+            >
+              <option value="all">All locations</option>
+              {locations.map((loc) => (
+                <option key={loc} value={loc}>
+                  {loc}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {loading && <p className="text-sm text-slate-500">Loading bookings...</p>}
         {!loading && filtered.length === 0 && (

@@ -2,28 +2,37 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Profile, Worker } from "@/lib/types";
+import type { Location, Profile, Worker } from "@/lib/types";
 
 function TeamMemberRow({
   userId,
   name,
   phone,
+  location,
+  locationOptions,
   extra,
   onSaved,
 }: {
   userId: string | undefined;
   name: string;
   phone: string;
+  location?: string | null;
+  locationOptions?: string[];
   extra?: React.ReactNode;
   onSaved: () => void;
 }) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name, phone, password: "" });
+  const [form, setForm] = useState({
+    name,
+    phone,
+    password: "",
+    location: location ?? "",
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function startEdit() {
-    setForm({ name, phone, password: "" });
+    setForm({ name, phone, password: "", location: location ?? "" });
     setError(null);
     setEditing(true);
   }
@@ -42,6 +51,7 @@ function TeamMemberRow({
         name: form.name,
         phone: form.phone,
         password: form.password || undefined,
+        location: locationOptions ? form.location : undefined,
       }),
     });
     const json = await res.json();
@@ -94,6 +104,23 @@ function TeamMemberRow({
             className="input"
           />
         </div>
+        {locationOptions && (
+          <select
+            required
+            value={form.location}
+            onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+            className="input"
+          >
+            <option value="" disabled>
+              Select mall / location
+            </option>
+            {locationOptions.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
+              </option>
+            ))}
+          </select>
+        )}
         <div className="flex gap-2">
           <button
             type="submit"
@@ -118,7 +145,10 @@ function TeamMemberRow({
     <div className="flex items-center justify-between bg-white rounded-xl border border-slate-200 px-4 py-3">
       <div>
         <p className="font-medium text-slate-900">{name}</p>
-        <p className="text-xs text-slate-500">{phone}</p>
+        <p className="text-xs text-slate-500">
+          {phone}
+          {location && ` · ${location}`}
+        </p>
       </div>
       <div className="flex items-center gap-2">
         {userId && (
@@ -140,13 +170,14 @@ export default function TeamManagement() {
 
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
 
   const [staffForm, setStaffForm] = useState({ name: "", phone: "", password: "" });
   const [staffSubmitting, setStaffSubmitting] = useState(false);
   const [staffError, setStaffError] = useState<string | null>(null);
   const [staffSuccess, setStaffSuccess] = useState(false);
 
-  const [supForm, setSupForm] = useState({ name: "", phone: "", password: "" });
+  const [supForm, setSupForm] = useState({ name: "", phone: "", password: "", location: "" });
   const [supSubmitting, setSupSubmitting] = useState(false);
   const [supError, setSupError] = useState<string | null>(null);
   const [supSuccess, setSupSuccess] = useState(false);
@@ -165,6 +196,11 @@ export default function TeamManagement() {
     if (data) setProfiles(data as Profile[]);
   }, [supabase]);
 
+  const loadLocations = useCallback(async () => {
+    const { data } = await supabase.from("locations").select("*").order("name");
+    if (data) setLocations(data as Location[]);
+  }, [supabase]);
+
   const refresh = useCallback(() => {
     loadWorkers();
     loadProfiles();
@@ -172,8 +208,10 @@ export default function TeamManagement() {
 
   useEffect(() => {
     refresh();
-  }, [refresh]);
+    loadLocations();
+  }, [refresh, loadLocations]);
 
+  const locationNames = locations.map((l) => l.name);
   const supervisors = profiles.filter((p) => p.role === "operator");
   const workerProfileByWorkerId = new Map(
     profiles.filter((p) => p.role === "worker" && p.worker_id).map((p) => [p.worker_id, p])
@@ -225,7 +263,7 @@ export default function TeamManagement() {
     }
 
     setSupSuccess(true);
-    setSupForm({ name: "", phone: "", password: "" });
+    setSupForm({ name: "", phone: "", password: "", location: "" });
     refresh();
   }
 
@@ -322,6 +360,10 @@ export default function TeamManagement() {
 
       <section className="space-y-3">
         <h2 className="font-semibold text-slate-900">Supervisors</h2>
+        <p className="text-xs text-slate-500">
+          Each supervisor only sees bookings and activity for their assigned mall /
+          location.
+        </p>
 
         <form
           onSubmit={handleAddSupervisor}
@@ -352,13 +394,33 @@ export default function TeamManagement() {
             onChange={(e) => setSupForm((f) => ({ ...f, password: e.target.value }))}
             className="input"
           />
+          <select
+            required
+            value={supForm.location}
+            onChange={(e) => setSupForm((f) => ({ ...f, location: e.target.value }))}
+            className="input sm:col-span-2"
+          >
+            <option value="" disabled>
+              Select mall / location
+            </option>
+            {locationNames.map((loc) => (
+              <option key={loc} value={loc}>
+                {loc}
+              </option>
+            ))}
+          </select>
           <button
             type="submit"
-            disabled={supSubmitting}
-            className="sm:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
+            disabled={supSubmitting || locationNames.length === 0}
+            className="bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
           >
             {supSubmitting ? "Adding..." : "Add Supervisor"}
           </button>
+          {locationNames.length === 0 && (
+            <p className="sm:col-span-3 text-xs text-slate-400">
+              Add a location under Locations &amp; QR Codes first.
+            </p>
+          )}
         </form>
 
         {supError && (
@@ -380,6 +442,8 @@ export default function TeamManagement() {
               userId={sup.id}
               name={sup.name ?? ""}
               phone={sup.phone ?? ""}
+              location={sup.location}
+              locationOptions={locationNames}
               onSaved={refresh}
             />
           ))}

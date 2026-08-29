@@ -66,6 +66,8 @@ create table if not exists profiles (
   name text,
   role text not null check (role in ('admin', 'operator', 'worker')),
   worker_id uuid references workers(id),
+  -- Operators (Supervisors) are scoped to one mall/location; admins see all.
+  location text,
   created_at timestamp with time zone default now()
 );
 
@@ -162,10 +164,18 @@ create policy "bookings: anyone can insert"
   to anon, authenticated
   with check (true);
 
--- Operators and admins can read every booking.
-create policy "bookings: operator/admin can read all"
+-- Admins can read every booking, across every mall/location.
+create policy "bookings: admin can read all"
   on bookings for select
-  using ((select role from current_profile()) in ('operator', 'admin'));
+  using ((select role from current_profile()) = 'admin');
+
+-- Operators (Supervisors) can only read bookings at their assigned location.
+create policy "bookings: operator can read own location"
+  on bookings for select
+  using (
+    (select role from current_profile()) = 'operator'
+    and location = (select location from current_profile())
+  );
 
 -- Workers can only read bookings assigned to them.
 create policy "bookings: worker can read own"
@@ -175,11 +185,23 @@ create policy "bookings: worker can read own"
     and worker_id = (select worker_id from current_profile())
   );
 
--- Operators and admins can update any booking (assign worker, status, key_status).
-create policy "bookings: operator/admin can update all"
+-- Admins can update any booking, across every mall/location.
+create policy "bookings: admin can update all"
   on bookings for update
-  using ((select role from current_profile()) in ('operator', 'admin'))
-  with check ((select role from current_profile()) in ('operator', 'admin'));
+  using ((select role from current_profile()) = 'admin')
+  with check ((select role from current_profile()) = 'admin');
+
+-- Operators (Supervisors) can only update bookings at their assigned location.
+create policy "bookings: operator can update own location"
+  on bookings for update
+  using (
+    (select role from current_profile()) = 'operator'
+    and location = (select location from current_profile())
+  )
+  with check (
+    (select role from current_profile()) = 'operator'
+    and location = (select location from current_profile())
+  );
 
 -- Workers can update only bookings assigned to them (status, key_status, photos).
 create policy "bookings: worker can update own"
