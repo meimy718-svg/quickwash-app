@@ -16,7 +16,7 @@ const KEY_OPTIONS: KeyOption[] = [
 const KEY_OPTION_LABELS: Record<KeyOption, string> = {
   "Hand key to worker": "Collect it from me",
   "Drive myself": "Drive myself",
-  "Drop at info desk": "Drop at info desk",
+  "Drop at info desk": "Specify",
 };
 
 interface BookingResult {
