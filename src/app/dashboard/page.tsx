@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { playAlertSound } from "@/lib/playAlert";
 import StaffHeader from "@/components/StaffHeader";
 import StatusPill from "@/components/StatusPill";
+import TeamManagement from "@/components/TeamManagement";
 import type { Booking, BookingStatus, KeyStatus, Worker } from "@/lib/types";
 
 type Filter = "all" | BookingStatus;
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [filter, setFilter] = useState<Filter>("all");
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState<"bookings" | "team">("bookings");
 
   const loadBookings = useCallback(async () => {
     const { data } = await supabase
@@ -99,6 +101,26 @@ export default function DashboardPage() {
       <StaffHeader title="Supervisor Dashboard" />
 
       <div className="px-4 py-4 max-w-3xl mx-auto space-y-4">
+        <div className="flex gap-2">
+          {(["bookings", "team"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`text-sm rounded-full px-4 py-1.5 border transition ${
+                view === v
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "border-slate-300 text-slate-600"
+              }`}
+            >
+              {v === "bookings" ? "Bookings" : "Team"}
+            </button>
+          ))}
+        </div>
+
+        {view === "team" && <TeamManagement />}
+
+        {view === "bookings" && (
+          <>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {FILTERS.map((f) => (
             <button
@@ -187,6 +209,8 @@ export default function DashboardPage() {
             </div>
           ))}
         </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -52,6 +52,8 @@ create index if not exists bookings_device_id_idx on bookings (device_id);
 create table if not exists profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text unique not null,
+  phone text,
+  name text,
   role text not null check (role in ('admin', 'operator', 'worker')),
   worker_id uuid references workers(id),
   created_at timestamp with time zone default now()
@@ -101,9 +103,9 @@ create policy "profiles: user can read own row"
   on profiles for select
   using (id = auth.uid());
 
-create policy "profiles: admin can read all"
+create policy "profiles: admin and operator can read all"
   on profiles for select
-  using ((select role from current_profile()) = 'admin');
+  using ((select role from current_profile()) in ('admin', 'operator'));
 
 create policy "profiles: admin can manage"
   on profiles for all
@@ -125,10 +127,10 @@ create policy "workers: staff can read"
   on workers for select
   using (auth.role() = 'authenticated');
 
-create policy "workers: admin can manage"
+create policy "workers: admin and operator can manage"
   on workers for all
-  using ((select role from current_profile()) = 'admin')
-  with check ((select role from current_profile()) = 'admin');
+  using ((select role from current_profile()) in ('admin', 'operator'))
+  with check ((select role from current_profile()) in ('admin', 'operator'));
 
 -- bookings -------------------------------------------------------
 -- Anyone (including anonymous customers on /book) can create a booking.

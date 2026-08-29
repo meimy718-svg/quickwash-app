@@ -51,6 +51,8 @@ export interface Booking {
 export interface Profile {
   id: string;
   email: string;
+  phone: string | null;
+  name: string | null;
   role: UserRole;
   worker_id: string | null;
   created_at: string;

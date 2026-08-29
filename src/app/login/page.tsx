@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { phoneToSyntheticEmail } from "@/lib/phoneAuth";
 
 const ROLE_HOME: Record<string, string> = {
   admin: "/admin",
@@ -15,7 +16,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const next = searchParams.get("next");
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -34,6 +35,9 @@ function LoginForm() {
     setLoading(true);
 
     const supabase = createClient();
+    const email = identifier.includes("@")
+      ? identifier
+      : phoneToSyntheticEmail(identifier);
     const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -82,12 +86,14 @@ function LoginForm() {
         )}
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+          <label className="block text-sm font-medium text-slate-700 mb-1">
+            Email or phone number
+          </label>
           <input
-            type="email"
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
+            placeholder="Admin: email · Staff/Supervisor: phone number"
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -113,7 +119,7 @@ function LoginForm() {
 
         <div className="flex items-center justify-between text-sm">
           <a href="/forgot-password" className="text-slate-500 underline">
-            Forgot password?
+            Forgot password? (admin only)
           </a>
           {!hasAdmin && (
             <a href="/signup" className="text-blue-600 underline">
@@ -121,6 +127,9 @@ function LoginForm() {
             </a>
           )}
         </div>
+        <p className="text-xs text-slate-400 text-center">
+          Staff and Supervisors: ask your admin or supervisor to reset your password.
+        </p>
       </form>
     </div>
   );

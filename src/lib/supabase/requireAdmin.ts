@@ -1,15 +1,20 @@
 import "server-only";
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import type { UserRole } from "@/lib/types";
 
-export async function requireAdmin() {
+async function requireRole(allowedRoles: UserRole[]) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: NextResponse.json({ error: "Not authenticated" }, { status: 401 }) };
+    return {
+      error: NextResponse.json({ error: "Not authenticated" }, { status: 401 }),
+      role: null,
+      userId: null,
+    };
   }
 
   const { data: profile } = await supabase
@@ -18,11 +23,25 @@ export async function requireAdmin() {
     .eq("id", user.id)
     .single();
 
-  if (profile?.role !== "admin") {
-    return { error: NextResponse.json({ error: "Admin access required" }, { status: 403 }) };
+  if (!profile || !allowedRoles.includes(profile.role as UserRole)) {
+    return {
+      error: NextResponse.json({ error: "Access denied" }, { status: 403 }),
+      role: null,
+      userId: null,
+    };
   }
 
-  return { error: null };
+  return { error: null, role: profile.role as UserRole, userId: user.id };
+}
+
+// Admin-only actions (locations, and anything only the owner should do).
+export async function requireAdmin() {
+  return requireRole(["admin"]);
+}
+
+// Admin or Supervisor — both can manage Staff and Supervisor accounts.
+export async function requireStaffManager() {
+  return requireRole(["admin", "operator"]);
 }
 
 export function randomTempPassword() {
