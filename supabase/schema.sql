@@ -7,10 +7,18 @@ create extension if not exists "pgcrypto";
 -- TABLES
 -- ============================================================
 
+create table if not exists malls (
+  id uuid default gen_random_uuid() primary key,
+  name text not null unique,
+  created_at timestamp with time zone default now()
+);
+
 create table if not exists locations (
   id uuid default gen_random_uuid() primary key,
   name text not null,
   qr_code_url text,
+  -- Which mall this QR location/gate belongs to.
+  mall text,
   created_at timestamp with time zone default now()
 );
 
@@ -20,8 +28,8 @@ create table if not exists workers (
   phone text,
   email text unique,
   available boolean default true,
-  -- Which mall/location this staff member belongs to; a Supervisor can only
-  -- see/manage Staff at their own assigned location.
+  -- Which mall this staff member belongs to; a Supervisor can only see/manage
+  -- Staff at their own assigned mall (covers every gate under that mall).
   location text,
   created_at timestamp with time zone default now()
 );
@@ -47,6 +55,9 @@ create table if not exists bookings (
   key_status text default 'none',
   status text default 'pending',
   location text not null,
+  -- Which mall the location above belongs to, copied in at booking time so
+  -- RLS can scope a Supervisor to their whole mall without a join.
+  mall text,
   otp text not null,
   worker_id uuid references workers(id),
   photos_before text[],
@@ -102,6 +113,7 @@ create trigger bookings_set_updated_at
 -- ROW LEVEL SECURITY
 -- ============================================================
 
+alter table malls enable row level security;
 alter table locations enable row level security;
 alter table workers enable row level security;
 alter table services enable row level security;
@@ -129,6 +141,15 @@ create policy "profiles: admin can manage"
   with check ((select role from current_profile()) = 'admin');
 
 -- locations ----------------------------------------------------
+create policy "malls: public can read"
+  on malls for select
+  using (true);
+
+create policy "malls: admin can manage"
+  on malls for all
+  using ((select role from current_profile()) = 'admin')
+  with check ((select role from current_profile()) = 'admin');
+
 create policy "locations: staff can read"
   on locations for select
   using (auth.role() = 'authenticated');
@@ -180,11 +201,11 @@ create policy "bookings: admin can read all"
   using ((select role from current_profile()) = 'admin');
 
 -- Operators (Supervisors) can only read bookings at their assigned location.
-create policy "bookings: operator can read own location"
+create policy "bookings: operator can read own mall"
   on bookings for select
   using (
     (select role from current_profile()) = 'operator'
-    and location = (select location from current_profile())
+    and mall = (select location from current_profile())
   );
 
 -- Workers can only read bookings assigned to them.
@@ -202,15 +223,15 @@ create policy "bookings: admin can update all"
   with check ((select role from current_profile()) = 'admin');
 
 -- Operators (Supervisors) can only update bookings at their assigned location.
-create policy "bookings: operator can update own location"
+create policy "bookings: operator can update own mall"
   on bookings for update
   using (
     (select role from current_profile()) = 'operator'
-    and location = (select location from current_profile())
+    and mall = (select location from current_profile())
   )
   with check (
     (select role from current_profile()) = 'operator'
-    and location = (select location from current_profile())
+    and mall = (select location from current_profile())
   );
 
 -- Workers can update only bookings assigned to them (status, key_status, photos).

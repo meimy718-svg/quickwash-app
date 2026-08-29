@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Location, Profile, Worker } from "@/lib/types";
+import type { Mall, Profile, Worker } from "@/lib/types";
 
 function TeamMemberRow({
   userId,
@@ -112,7 +112,7 @@ function TeamMemberRow({
             className="input"
           >
             <option value="" disabled>
-              Select mall / location
+              Select mall
             </option>
             {locationOptions.map((loc) => (
               <option key={loc} value={loc}>
@@ -170,7 +170,7 @@ export default function TeamManagement() {
 
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [locations, setLocations] = useState<Location[]>([]);
+  const [malls, setMalls] = useState<Mall[]>([]);
   const [viewer, setViewer] = useState<{ role: string; location: string | null } | null>(
     null
   );
@@ -199,9 +199,9 @@ export default function TeamManagement() {
     if (data) setProfiles(data as Profile[]);
   }, [supabase]);
 
-  const loadLocations = useCallback(async () => {
-    const { data } = await supabase.from("locations").select("*").order("name");
-    if (data) setLocations(data as Location[]);
+  const loadMalls = useCallback(async () => {
+    const { data } = await supabase.from("malls").select("*").order("name");
+    if (data) setMalls(data as Mall[]);
   }, [supabase]);
 
   const loadViewer = useCallback(async () => {
@@ -224,12 +224,12 @@ export default function TeamManagement() {
 
   useEffect(() => {
     refresh();
-    loadLocations();
+    loadMalls();
     loadViewer();
-  }, [refresh, loadLocations, loadViewer]);
+  }, [refresh, loadMalls, loadViewer]);
 
   const isAdminViewer = viewer?.role === "admin";
-  const locationNames = locations.map((l) => l.name);
+  const mallNames = malls.map((m) => m.name);
   const supervisors = profiles.filter((p) => p.role === "operator");
   const workerProfileByWorkerId = new Map(
     profiles.filter((p) => p.role === "worker" && p.worker_id).map((p) => [p.worker_id, p])
@@ -340,9 +340,9 @@ export default function TeamManagement() {
               className="input sm:col-span-2"
             >
               <option value="" disabled>
-                Select mall / location
+                Select mall
               </option>
-              {locationNames.map((loc) => (
+              {mallNames.map((loc) => (
                 <option key={loc} value={loc}>
                   {loc}
                 </option>
@@ -351,7 +351,7 @@ export default function TeamManagement() {
           )}
           <button
             type="submit"
-            disabled={staffSubmitting || (isAdminViewer && locationNames.length === 0)}
+            disabled={staffSubmitting || (isAdminViewer && mallNames.length === 0)}
             className={`bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2 ${
               isAdminViewer ? "" : "sm:col-span-3"
             }`}
@@ -382,7 +382,7 @@ export default function TeamManagement() {
                 name={worker.name}
                 phone={worker.phone ?? ""}
                 location={worker.location}
-                locationOptions={isAdminViewer ? locationNames : undefined}
+                locationOptions={isAdminViewer ? mallNames : undefined}
                 onSaved={refresh}
                 extra={
                   <button
@@ -445,9 +445,9 @@ export default function TeamManagement() {
             className="input sm:col-span-2"
           >
             <option value="" disabled>
-              Select mall / location
+              Select mall
             </option>
-            {locationNames.map((loc) => (
+            {mallNames.map((loc) => (
               <option key={loc} value={loc}>
                 {loc}
               </option>
@@ -455,14 +455,14 @@ export default function TeamManagement() {
           </select>
           <button
             type="submit"
-            disabled={supSubmitting || locationNames.length === 0}
+            disabled={supSubmitting || mallNames.length === 0}
             className="bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
           >
             {supSubmitting ? "Adding..." : "Add Supervisor"}
           </button>
-          {locationNames.length === 0 && (
+          {mallNames.length === 0 && (
             <p className="sm:col-span-3 text-xs text-slate-400">
-              Add a location under Locations &amp; QR Codes first.
+              Add a mall first.
             </p>
           )}
         </form>
@@ -487,7 +487,7 @@ export default function TeamManagement() {
               name={sup.name ?? ""}
               phone={sup.phone ?? ""}
               location={sup.location}
-              locationOptions={locationNames}
+              locationOptions={mallNames}
               onSaved={refresh}
             />
           ))}

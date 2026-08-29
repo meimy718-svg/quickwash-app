@@ -8,16 +8,19 @@ import DailyReport from "@/components/DailyReport";
 import PrintableQrSign from "@/components/PrintableQrSign";
 import TeamManagement from "@/components/TeamManagement";
 import ServicesManagement from "@/components/ServicesManagement";
-import type { Location, Worker } from "@/lib/types";
+import MallsManagement from "@/components/MallsManagement";
+import type { Location, Mall, Worker } from "@/lib/types";
 
 export default function AdminPage() {
   const supabase = useMemo(() => createClient(), []);
 
   const [locations, setLocations] = useState<Location[]>([]);
   const [locationName, setLocationName] = useState("");
+  const [locationMall, setLocationMall] = useState("");
   const [generatingQr, setGeneratingQr] = useState(false);
   const [printLocation, setPrintLocation] = useState<Location | null>(null);
 
+  const [malls, setMalls] = useState<Mall[]>([]);
   const [workers, setWorkers] = useState<Worker[]>([]);
 
   const loadLocations = useCallback(async () => {
@@ -28,6 +31,11 @@ export default function AdminPage() {
     if (data) setLocations(data as Location[]);
   }, [supabase]);
 
+  const loadMalls = useCallback(async () => {
+    const { data } = await supabase.from("malls").select("*").order("name");
+    if (data) setMalls(data as Mall[]);
+  }, [supabase]);
+
   const loadWorkers = useCallback(async () => {
     const { data } = await supabase.from("workers").select("*").order("name");
     if (data) setWorkers(data as Worker[]);
@@ -35,12 +43,13 @@ export default function AdminPage() {
 
   useEffect(() => {
     loadLocations();
+    loadMalls();
     loadWorkers();
-  }, [loadLocations, loadWorkers]);
+  }, [loadLocations, loadMalls, loadWorkers]);
 
   async function handleAddLocation(e: React.FormEvent) {
     e.preventDefault();
-    if (!locationName.trim()) return;
+    if (!locationName.trim() || !locationMall) return;
     setGeneratingQr(true);
 
     const bookingUrl = `${window.location.origin}/book?location=${encodeURIComponent(
@@ -51,11 +60,19 @@ export default function AdminPage() {
     await supabase.from("locations").insert({
       name: locationName.trim(),
       qr_code_url: qrDataUrl,
+      mall: locationMall,
     });
 
     setLocationName("");
     setGeneratingQr(false);
     loadLocations();
+  }
+
+  const mallNames = malls.map((m) => m.name);
+  const locationsByMall = new Map<string, Location[]>();
+  for (const loc of locations) {
+    const key = loc.mall ?? "Unassigned";
+    locationsByMall.set(key, [...(locationsByMall.get(key) ?? []), loc]);
   }
 
   return (
@@ -67,49 +84,76 @@ export default function AdminPage() {
         <StaffHeader title="Admin Panel" />
 
         <div className="px-4 py-4 max-w-3xl mx-auto space-y-8">
+          <MallsManagement onChanged={loadMalls} />
+
           <section className="space-y-3">
             <h2 className="font-semibold text-slate-900">Locations &amp; QR Codes</h2>
 
-            <form onSubmit={handleAddLocation} className="flex gap-2">
+            <form onSubmit={handleAddLocation} className="flex flex-col sm:flex-row gap-2">
               <input
                 placeholder="e.g. Level 2 - Gate A"
                 value={locationName}
                 onChange={(e) => setLocationName(e.target.value)}
                 className="input flex-1"
               />
+              <select
+                required
+                value={locationMall}
+                onChange={(e) => setLocationMall(e.target.value)}
+                className="input sm:w-48"
+              >
+                <option value="" disabled>
+                  Select mall
+                </option>
+                {mallNames.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
               <button
                 type="submit"
-                disabled={generatingQr}
+                disabled={generatingQr || mallNames.length === 0}
                 className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white text-sm font-medium rounded-lg px-4"
               >
                 {generatingQr ? "Generating..." : "Add Location"}
               </button>
             </form>
+            {mallNames.length === 0 && (
+              <p className="text-xs text-slate-400">Add a mall above first.</p>
+            )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {locations.map((loc) => (
-                <div
-                  key={loc.id}
-                  className="bg-white rounded-xl border border-slate-200 p-3 text-center space-y-2"
-                >
-                  {loc.qr_code_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={loc.qr_code_url}
-                      alt={`QR code for ${loc.name}`}
-                      className="w-full rounded-lg"
-                    />
-                  )}
-                  <p className="text-sm font-medium text-slate-700">{loc.name}</p>
-                  <button
-                    onClick={() => setPrintLocation(loc)}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-800"
-                  >
-                    Print sign
-                  </button>
+            {Array.from(locationsByMall.entries()).map(([mallName, locs]) => (
+              <div key={mallName} className="space-y-2">
+                <p className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                  {mallName}
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {locs.map((loc) => (
+                    <div
+                      key={loc.id}
+                      className="bg-white rounded-xl border border-slate-200 p-3 text-center space-y-2"
+                    >
+                      {loc.qr_code_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={loc.qr_code_url}
+                          alt={`QR code for ${loc.name}`}
+                          className="w-full rounded-lg"
+                        />
+                      )}
+                      <p className="text-sm font-medium text-slate-700">{loc.name}</p>
+                      <button
+                        onClick={() => setPrintLocation(loc)}
+                        className="text-xs font-medium text-blue-600 hover:text-blue-800"
+                      >
+                        Print sign
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </section>
 
           <ServicesManagement />

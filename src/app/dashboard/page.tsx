@@ -96,12 +96,14 @@ export default function DashboardPage() {
     await supabase.from("bookings").update({ key_status: next }).eq("id", booking.id);
   }
 
-  const locations = Array.from(new Set(bookings.map((b) => b.location))).sort();
+  const mallOptions = Array.from(
+    new Set(bookings.map((b) => b.mall).filter((m): m is string => Boolean(m)))
+  ).sort();
 
   const filtered = bookings.filter(
     (b) =>
       (filter === "all" || b.status === filter) &&
-      (locationFilter === "all" || b.location === locationFilter)
+      (locationFilter === "all" || b.mall === locationFilter)
   );
 
   return (
@@ -146,18 +148,18 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        {locations.length > 1 && (
+        {mallOptions.length > 1 && (
           <div>
-            <label className="block text-xs text-slate-500 mb-1">Mall / Location</label>
+            <label className="block text-xs text-slate-500 mb-1">Mall</label>
             <select
               value={locationFilter}
               onChange={(e) => setLocationFilter(e.target.value)}
               className="input"
             >
-              <option value="all">All locations</option>
-              {locations.map((loc) => (
-                <option key={loc} value={loc}>
-                  {loc}
+              <option value="all">All malls</option>
+              {mallOptions.map((m) => (
+                <option key={m} value={m}>
+                  {m}
                 </option>
               ))}
             </select>

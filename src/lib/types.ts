@@ -14,10 +14,17 @@ export type BookingStatus = "pending" | "in_progress" | "done";
 
 export type UserRole = "admin" | "operator" | "worker";
 
+export interface Mall {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface Location {
   id: string;
   name: string;
   qr_code_url: string | null;
+  mall: string | null;
   created_at: string;
 }
 
@@ -53,6 +60,7 @@ export interface Booking {
   key_handover_note: string | null;
   status: BookingStatus;
   location: string;
+  mall: string | null;
   otp: string;
   worker_id: string | null;
   photos_before: string[] | null;

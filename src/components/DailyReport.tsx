@@ -22,6 +22,7 @@ function toCsv(bookings: Booking[], workerNameById: Map<string, string>) {
     "key_option",
     "key_status",
     "status",
+    "mall",
     "location",
     "worker",
     "created_at",
@@ -38,6 +39,7 @@ function toCsv(bookings: Booking[], workerNameById: Map<string, string>) {
     b.key_option,
     b.key_status,
     b.status,
+    b.mall ?? "",
     b.location,
     b.worker_id ? workerNameById.get(b.worker_id) ?? b.worker_id : "",
     b.created_at,
@@ -77,8 +79,9 @@ export default function DailyReport({ workers }: { workers: Worker[] }) {
     [bookings]
   );
 
-  const locations = useMemo(
-    () => Array.from(new Set(bookings.map((b) => b.location))).sort(),
+  const mallOptions = useMemo(
+    () =>
+      Array.from(new Set(bookings.map((b) => b.mall).filter((m): m is string => Boolean(m)))).sort(),
     [bookings]
   );
 
@@ -86,11 +89,14 @@ export default function DailyReport({ workers }: { workers: Worker[] }) {
     () =>
       locationFilter === "all"
         ? todaysBookings
-        : todaysBookings.filter((b) => b.location === locationFilter),
+        : todaysBookings.filter((b) => b.mall === locationFilter),
     [todaysBookings, locationFilter]
   );
 
-  const byLocation = useMemo(() => countBy(todaysBookings, (b) => b.location), [todaysBookings]);
+  const byMall = useMemo(
+    () => countBy(todaysBookings, (b) => b.mall ?? "Unassigned"),
+    [todaysBookings]
+  );
   const byStatus = useMemo(() => countBy(todaysFiltered, (b) => b.status), [todaysFiltered]);
   const byWashType = useMemo(
     () => countBy(todaysFiltered, (b) => b.wash_type),
@@ -108,7 +114,7 @@ export default function DailyReport({ workers }: { workers: Worker[] }) {
     const rows =
       locationFilter === "all"
         ? bookings
-        : bookings.filter((b) => b.location === locationFilter);
+        : bookings.filter((b) => b.mall === locationFilter);
     const csv = toCsv(rows, workerNameById);
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -123,18 +129,18 @@ export default function DailyReport({ workers }: { workers: Worker[] }) {
 
   return (
     <div className="space-y-4">
-      {locations.length > 1 && (
+      {mallOptions.length > 1 && (
         <div>
-          <label className="block text-xs text-slate-500 mb-1">Mall / Location</label>
+          <label className="block text-xs text-slate-500 mb-1">Mall</label>
           <select
             value={locationFilter}
             onChange={(e) => setLocationFilter(e.target.value)}
             className="input"
           >
-            <option value="all">All locations</option>
-            {locations.map((loc) => (
-              <option key={loc} value={loc}>
-                {loc}
+            <option value="all">All malls</option>
+            {mallOptions.map((m) => (
+              <option key={m} value={m}>
+                {m}
               </option>
             ))}
           </select>
@@ -147,12 +153,12 @@ export default function DailyReport({ workers }: { workers: Worker[] }) {
           onClick={exportCsv}
           className="text-sm font-medium text-blue-600 hover:text-blue-800"
         >
-          Export CSV ({locationFilter === "all" ? "all locations" : locationFilter})
+          Export CSV ({locationFilter === "all" ? "all malls" : locationFilter})
         </button>
       </div>
 
       <div className="grid sm:grid-cols-3 gap-3">
-        {locations.length > 1 && <ReportCard title="By Mall / Location" counts={byLocation} />}
+        {mallOptions.length > 1 && <ReportCard title="By Mall" counts={byMall} />}
         <ReportCard title="By Status" counts={byStatus} />
         <ReportCard title="By Wash Type" counts={byWashType} />
         <ReportCard title="By Staff" counts={byWorker} />

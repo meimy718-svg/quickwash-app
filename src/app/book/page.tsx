@@ -59,6 +59,7 @@ function BookingForm() {
   const [history, setHistory] = useState<Booking[]>([]);
   const [deviceId, setDeviceId] = useState("");
   const [services, setServices] = useState<Service[]>([]);
+  const [mall, setMall] = useState<string | null>(null);
 
   useEffect(() => {
     const id = getOrCreateDeviceId();
@@ -69,6 +70,18 @@ function BookingForm() {
       .then((json) => setHistory(json.bookings ?? []))
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("locations")
+      .select("mall")
+      .eq("name", location)
+      .maybeSingle()
+      .then(({ data }) => {
+        setMall(data?.mall ?? null);
+      });
+  }, [location]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -134,6 +147,7 @@ function BookingForm() {
         keyOption === "Drop at info desk" ? keyHandoverNote || null : null,
       status: "pending",
       location,
+      mall,
       otp,
       device_id: deviceId || null,
     });
