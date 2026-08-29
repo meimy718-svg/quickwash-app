@@ -10,15 +10,15 @@ export default function TeamManagement() {
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
 
-  const [staffForm, setStaffForm] = useState({ name: "", phone: "" });
+  const [staffForm, setStaffForm] = useState({ name: "", phone: "", password: "" });
   const [staffSubmitting, setStaffSubmitting] = useState(false);
   const [staffError, setStaffError] = useState<string | null>(null);
-  const [staffPassword, setStaffPassword] = useState<string | null>(null);
+  const [staffSuccess, setStaffSuccess] = useState(false);
 
-  const [supForm, setSupForm] = useState({ name: "", phone: "" });
+  const [supForm, setSupForm] = useState({ name: "", phone: "", password: "" });
   const [supSubmitting, setSupSubmitting] = useState(false);
   const [supError, setSupError] = useState<string | null>(null);
-  const [supPassword, setSupPassword] = useState<string | null>(null);
+  const [supSuccess, setSupSuccess] = useState(false);
 
   const [resetMessage, setResetMessage] = useState<string | null>(null);
 
@@ -50,7 +50,7 @@ export default function TeamManagement() {
     e.preventDefault();
     setStaffSubmitting(true);
     setStaffError(null);
-    setStaffPassword(null);
+    setStaffSuccess(false);
 
     const res = await fetch("/api/admin/workers", {
       method: "POST",
@@ -66,8 +66,8 @@ export default function TeamManagement() {
       return;
     }
 
-    setStaffPassword(json.tempPassword);
-    setStaffForm({ name: "", phone: "" });
+    setStaffSuccess(true);
+    setStaffForm({ name: "", phone: "", password: "" });
     loadWorkers();
     loadProfiles();
   }
@@ -76,7 +76,7 @@ export default function TeamManagement() {
     e.preventDefault();
     setSupSubmitting(true);
     setSupError(null);
-    setSupPassword(null);
+    setSupSuccess(false);
 
     const res = await fetch("/api/admin/operators", {
       method: "POST",
@@ -92,8 +92,8 @@ export default function TeamManagement() {
       return;
     }
 
-    setSupPassword(json.tempPassword);
-    setSupForm({ name: "", phone: "" });
+    setSupSuccess(true);
+    setSupForm({ name: "", phone: "", password: "" });
     loadProfiles();
   }
 
@@ -152,10 +152,20 @@ export default function TeamManagement() {
             onChange={(e) => setStaffForm((f) => ({ ...f, phone: e.target.value }))}
             className="input"
           />
+          <input
+            required
+            type="text"
+            inputMode="numeric"
+            minLength={4}
+            placeholder="Password (min 4 chars)"
+            value={staffForm.password}
+            onChange={(e) => setStaffForm((f) => ({ ...f, password: e.target.value }))}
+            className="input"
+          />
           <button
             type="submit"
             disabled={staffSubmitting}
-            className="bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
+            className="sm:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
           >
             {staffSubmitting ? "Adding..." : "Add Staff"}
           </button>
@@ -166,10 +176,10 @@ export default function TeamManagement() {
             {staffError}
           </p>
         )}
-        {staffPassword && (
+        {staffSuccess && (
           <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-            Staff created. Temporary password: <strong>{staffPassword}</strong> — share this
-            with them so they can sign in at /login using their phone number.
+            Staff created. They can sign in at /login with their phone number and the
+            password you set.
           </p>
         )}
 
@@ -233,10 +243,20 @@ export default function TeamManagement() {
             onChange={(e) => setSupForm((f) => ({ ...f, phone: e.target.value }))}
             className="input"
           />
+          <input
+            required
+            type="text"
+            inputMode="numeric"
+            minLength={4}
+            placeholder="Password (min 4 chars)"
+            value={supForm.password}
+            onChange={(e) => setSupForm((f) => ({ ...f, password: e.target.value }))}
+            className="input"
+          />
           <button
             type="submit"
             disabled={supSubmitting}
-            className="bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
+            className="sm:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
           >
             {supSubmitting ? "Adding..." : "Add Supervisor"}
           </button>
@@ -247,10 +267,10 @@ export default function TeamManagement() {
             {supError}
           </p>
         )}
-        {supPassword && (
+        {supSuccess && (
           <p className="text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
-            Supervisor created. Temporary password: <strong>{supPassword}</strong> — share
-            this with them so they can sign in at /login using their phone number.
+            Supervisor created. They can sign in at /login with their phone number and the
+            password you set.
           </p>
         )}
 
