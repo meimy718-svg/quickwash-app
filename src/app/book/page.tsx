@@ -84,16 +84,21 @@ function BookingForm() {
   }, [location]);
 
   useEffect(() => {
+    if (!mall) {
+      setServices([]);
+      return;
+    }
     const supabase = createClient();
     supabase
       .from("services")
       .select("*")
       .eq("available", true)
+      .eq("mall", mall)
       .order("created_at", { ascending: true })
       .then(({ data }) => {
         if (data) setServices(data as Service[]);
       });
-  }, []);
+  }, [mall]);
 
   function bookAgain(car: Booking) {
     setName(car.name);

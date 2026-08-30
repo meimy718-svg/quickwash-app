@@ -2,17 +2,29 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Service } from "@/lib/types";
+import type { Mall, Service } from "@/lib/types";
 
-function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => void }) {
+function ServiceRow({
+  service,
+  mallOptions,
+  onSaved,
+}: {
+  service: Service;
+  mallOptions?: string[];
+  onSaved: () => void;
+}) {
   const supabase = useMemo(() => createClient(), []);
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ name: service.name, price: String(service.price) });
+  const [form, setForm] = useState({
+    name: service.name,
+    price: String(service.price),
+    mall: service.mall ?? "",
+  });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function startEdit() {
-    setForm({ name: service.name, price: String(service.price) });
+    setForm({ name: service.name, price: String(service.price), mall: service.mall ?? "" });
     setError(null);
     setEditing(true);
   }
@@ -30,7 +42,11 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
 
     const { error: updateError } = await supabase
       .from("services")
-      .update({ name: form.name.trim(), price })
+      .update({
+        name: form.name.trim(),
+        price,
+        ...(mallOptions ? { mall: form.mall } : {}),
+      })
       .eq("id", service.id);
 
     setSubmitting(false);
@@ -100,6 +116,23 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
             className="input"
           />
         </div>
+        {mallOptions && (
+          <select
+            required
+            value={form.mall}
+            onChange={(e) => setForm((f) => ({ ...f, mall: e.target.value }))}
+            className="input"
+          >
+            <option value="" disabled>
+              Select mall
+            </option>
+            {mallOptions.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        )}
         <div className="flex gap-2">
           <button
             type="submit"
@@ -133,7 +166,10 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
             </span>
           )}
         </p>
-        <p className="text-xs text-slate-500">₹{service.price}</p>
+        <p className="text-xs text-slate-500">
+          ₹{service.price}
+          {service.mall && ` · ${service.mall}`}
+        </p>
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -171,7 +207,11 @@ function ServiceRow({ service, onSaved }: { service: Service; onSaved: () => voi
 export default function ServicesManagement() {
   const supabase = useMemo(() => createClient(), []);
   const [services, setServices] = useState<Service[]>([]);
-  const [form, setForm] = useState({ name: "", price: "", showPrice: true });
+  const [malls, setMalls] = useState<Mall[]>([]);
+  const [viewer, setViewer] = useState<{ role: string; location: string | null } | null>(
+    null
+  );
+  const [form, setForm] = useState({ name: "", price: "", showPrice: true, mall: "" });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -183,15 +223,44 @@ export default function ServicesManagement() {
     if (data) setServices(data as Service[]);
   }, [supabase]);
 
+  const loadMalls = useCallback(async () => {
+    const { data } = await supabase.from("malls").select("*").order("name");
+    if (data) setMalls(data as Mall[]);
+  }, [supabase]);
+
+  const loadViewer = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("profiles")
+      .select("role, location")
+      .eq("id", user.id)
+      .single();
+    if (data) setViewer(data);
+  }, [supabase]);
+
   useEffect(() => {
     loadServices();
-  }, [loadServices]);
+    loadMalls();
+    loadViewer();
+  }, [loadServices, loadMalls, loadViewer]);
+
+  const isAdminViewer = viewer?.role === "admin";
+  const mallNames = malls.map((m) => m.name);
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     const price = Number(form.price);
     if (!form.name.trim() || Number.isNaN(price) || price < 0) {
       setError("Enter a valid name and price");
+      return;
+    }
+
+    const mall = isAdminViewer ? form.mall : viewer?.location;
+    if (!mall) {
+      setError("Location is required");
       return;
     }
 
@@ -203,6 +272,7 @@ export default function ServicesManagement() {
       price,
       available: true,
       show_price: form.showPrice,
+      mall,
     });
 
     setSubmitting(false);
@@ -212,13 +282,18 @@ export default function ServicesManagement() {
       return;
     }
 
-    setForm({ name: "", price: "", showPrice: true });
+    setForm({ name: "", price: "", showPrice: true, mall: "" });
     loadServices();
   }
 
   return (
     <section className="space-y-3">
       <h2 className="font-semibold text-slate-900">Services</h2>
+      {!isAdminViewer && viewer?.location && (
+        <p className="text-xs text-slate-500">
+          You can only see and manage services at {viewer.location}.
+        </p>
+      )}
 
       <form
         onSubmit={handleAdd}
@@ -241,13 +316,40 @@ export default function ServicesManagement() {
           onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
           className="input"
         />
-        <button
-          type="submit"
-          disabled={submitting}
-          className="bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
-        >
-          {submitting ? "Adding..." : "Add Service"}
-        </button>
+        {isAdminViewer ? (
+          <select
+            required
+            value={form.mall}
+            onChange={(e) => setForm((f) => ({ ...f, mall: e.target.value }))}
+            className="input"
+          >
+            <option value="" disabled>
+              Select mall
+            </option>
+            {mallNames.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <button
+            type="submit"
+            disabled={submitting}
+            className="bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
+          >
+            {submitting ? "Adding..." : "Add Service"}
+          </button>
+        )}
+        {isAdminViewer && (
+          <button
+            type="submit"
+            disabled={submitting || mallNames.length === 0}
+            className="sm:col-span-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white text-sm font-medium rounded-lg py-2"
+          >
+            {submitting ? "Adding..." : "Add Service"}
+          </button>
+        )}
         <label className="sm:col-span-3 flex items-center gap-2 text-sm text-slate-600">
           <input
             type="checkbox"
@@ -256,6 +358,9 @@ export default function ServicesManagement() {
           />
           Show price to customers
         </label>
+        {isAdminViewer && mallNames.length === 0 && (
+          <p className="sm:col-span-3 text-xs text-slate-400">Add a mall first.</p>
+        )}
       </form>
 
       {error && (
@@ -266,7 +371,12 @@ export default function ServicesManagement() {
 
       <div className="space-y-2">
         {services.map((service) => (
-          <ServiceRow key={service.id} service={service} onSaved={loadServices} />
+          <ServiceRow
+            key={service.id}
+            service={service}
+            mallOptions={isAdminViewer ? mallNames : undefined}
+            onSaved={loadServices}
+          />
         ))}
         {services.length === 0 && (
           <p className="text-sm text-slate-400">No services added yet.</p>

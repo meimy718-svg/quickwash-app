@@ -44,6 +44,7 @@ export interface Service {
   price: number;
   available: boolean;
   show_price: boolean;
+  mall: string | null;
   created_at: string;
 }
 

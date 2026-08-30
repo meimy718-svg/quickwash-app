@@ -40,6 +40,10 @@ create table if not exists services (
   price numeric not null,
   available boolean default true,
   show_price boolean default true,
+  -- Which mall offers this service, at this price; not every mall needs to
+  -- offer every service, and the same service name can have a different
+  -- price at a different mall (as a separate row).
+  mall text,
   created_at timestamp with time zone default now()
 );
 
@@ -179,14 +183,26 @@ create policy "workers: operator can manage own location"
 -- services -------------------------------------------------------
 -- Public read (customers on /book have no login) — nothing sensitive in a
 -- service name/price.
-create policy "services: public can read"
+create policy "services: anon can read"
   on services for select
+  to anon
   using (true);
 
-create policy "services: admin and operator can manage"
+create policy "services: admin can manage"
   on services for all
-  using ((select role from current_profile()) in ('admin', 'operator'))
-  with check ((select role from current_profile()) in ('admin', 'operator'));
+  using ((select role from current_profile()) = 'admin')
+  with check ((select role from current_profile()) = 'admin');
+
+create policy "services: operator can manage own mall"
+  on services for all
+  using (
+    (select role from current_profile()) = 'operator'
+    and mall = (select location from current_profile())
+  )
+  with check (
+    (select role from current_profile()) = 'operator'
+    and mall = (select location from current_profile())
+  );
 
 -- bookings -------------------------------------------------------
 -- Anyone (including anonymous customers on /book) can create a booking.
