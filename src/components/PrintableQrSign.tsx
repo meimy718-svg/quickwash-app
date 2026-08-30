@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Location } from "@/lib/types";
 
 export default function PrintableQrSign({
@@ -10,6 +11,12 @@ export default function PrintableQrSign({
   location: Location;
   onDone: () => void;
 }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const handleAfterPrint = () => onDone();
     window.addEventListener("afterprint", handleAfterPrint);
@@ -18,7 +25,13 @@ export default function PrintableQrSign({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.id]);
 
-  return (
+  if (!mounted) return null;
+
+  // Rendered via a portal directly onto document.body so it always escapes
+  // whichever layout/page nesting it's triggered from — the rest of the app
+  // (header, tabs, page content) is hidden with print:hidden, and this sign
+  // is the only thing visible when the print dialog renders the page.
+  return createPortal(
     <div className="hidden print:flex print:flex-col print:items-center print:justify-center print:min-h-screen p-12 text-center">
       <p className="text-sm tracking-widest text-slate-500 uppercase mb-1">4OR CarSpa</p>
       <h1 className="text-3xl font-bold text-slate-900 mb-6">{location.name}</h1>
@@ -56,6 +69,7 @@ export default function PrintableQrSign({
       <p className="text-sm text-slate-400 mt-10">
         Questions? Ask any 4OR CarSpa team member on-site.
       </p>
-    </div>
+    </div>,
+    document.body
   );
 }
