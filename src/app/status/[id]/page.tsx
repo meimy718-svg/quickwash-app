@@ -87,9 +87,41 @@ export default async function BookingStatusPage({
           </span>
         </div>
 
+        {((booking.photos_before?.length ?? 0) > 0 ||
+          (booking.photos_after?.length ?? 0) > 0) && (
+          <div className="space-y-3">
+            {(booking.photos_before?.length ?? 0) > 0 && (
+              <PhotoGallery label="Before" urls={booking.photos_before!} />
+            )}
+            {(booking.photos_after?.length ?? 0) > 0 && (
+              <PhotoGallery label="After" urls={booking.photos_after!} />
+            )}
+          </div>
+        )}
+
         <a href="/book" className="block text-center text-sm text-slate-500 underline">
           Book another car
         </a>
+      </div>
+    </div>
+  );
+}
+
+function PhotoGallery({ label, urls }: { label: string; urls: string[] }) {
+  return (
+    <div>
+      <p className="text-xs font-medium text-slate-500 mb-1">{label}</p>
+      <div className="grid grid-cols-3 gap-2">
+        {urls.map((url) => (
+          <a key={url} href={url} target="_blank" rel="noopener noreferrer">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={url}
+              alt={`${label} photo`}
+              className="w-full aspect-square object-cover rounded-lg border border-slate-200"
+            />
+          </a>
+        ))}
       </div>
     </div>
   );
